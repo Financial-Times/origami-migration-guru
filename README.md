@@ -1,7 +1,7 @@
 origami-migration-guru
 =======================
 
-**Origami Migration Guru is not recommended for us. It's currently a proof of concept which is poorly written and _very_ broken.**
+**Origami Migration Guru is not recommended for use. It's currently a proof of concept which is poorly written and _very_ broken.**
 
 Origami Migration Guru helps plan the migration for new major released of components or other projects. For a given project, it analyses a given set of repository manifests looking for dependents. The dependents may be shown as a graph or step by step in an interactive command line interface.
 
