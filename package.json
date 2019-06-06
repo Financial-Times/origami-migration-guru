@@ -1,0 +1,56 @@
+{
+  "name": "origami-migration-guru",
+  "description": "Find and explore component dependents to plan major release migrations.",
+  "version": "0.0.0",
+  "bin": {
+    "omg": "./bin/run"
+  },
+  "bugs": "https://github.com/https://github.com/financial-times/origami-migration-guru/origami-migration-guru/issues",
+  "dependencies": {
+    "@oclif/command": "^1.5.14",
+    "@oclif/config": "^1.13.0",
+    "@oclif/plugin-help": "^2.2.0",
+    "cli-ux": "^5.2.1",
+    "sinon": "^7.3.2"
+  },
+  "devDependencies": {
+    "@oclif/dev-cli": "^1.22.0",
+    "@oclif/test": "^1.2.4",
+    "chai": "^4.2.0",
+    "eslint": "^5.16.0",
+    "eslint-config-oclif": "^3.1.0",
+    "globby": "^8.0.2",
+    "mocha": "^5.2.0",
+    "nyc": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=10.16.0"
+  },
+  "files": [
+    "/bin",
+    "/npm-shrinkwrap.json",
+    "/oclif.manifest.json",
+    "/src"
+  ],
+  "homepage": "https://github.com/https://github.com/financial-times/origami-migration-guru/origami-migration-guru",
+  "keywords": [
+    "oclif"
+  ],
+  "license": "MIT",
+  "main": "src/index.js",
+  "oclif": {
+    "commands": "./src/commands",
+    "bin": "omg",
+    "plugins": [
+      "@oclif/plugin-help"
+    ]
+  },
+  "repository": "https://github.com/financial-times/origami-migration-guru/origami-migration-guru",
+  "scripts": {
+    "postpack": "rm -f oclif.manifest.json",
+    "verify": "eslint .",
+    "prepack": "oclif-dev manifest && oclif-dev readme",
+    "test": "mocha --forbid-only \"test/**/*.test.js\"",
+    "version": "oclif-dev readme && git add README.md"
+  }
+}
