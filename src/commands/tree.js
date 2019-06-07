@@ -5,6 +5,7 @@ const Guru = require('../guru');
 const Dot = require('../dot');
 const { cli } = require('cli-ux');
 const { once } = require('events');
+const chalk = require('chalk');
 
 class TreeCommand extends Command {
 
@@ -35,9 +36,16 @@ class TreeCommand extends Command {
 			if (!cool) {
 				process.exit();
 			}
+			const impactedRepos = guru.getImpactedRepos();
 			for await (const result of guru.getMigration()) {
-				const names = result.dependents.map(repo => repo.name);
-				this.log(`${names.join(` (${result.repo.name})\n`)} (${result.repo.name})\n`);
+				const migrationLog = result.dependents.map(repo => {
+					const name = repo.name;
+					const dependenciesWhichRequiredUpgrade = repo.getDependencies().filter(name => {
+						return name === args.component || impactedRepos.find(repo => repo.name === name);
+					});
+					return `${chalk.green(name)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
+				}).join('\n');
+				this.log(migrationLog);
 				await cli.anykey();
 			}
 		}
