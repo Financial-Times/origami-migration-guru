@@ -19,8 +19,7 @@ class TreeCommand extends Command {
 		});
 		lines.on('line', input => {
 			try {
-				const result = JSON.parse(input);
-				repos.addFromEbi(result);
+				repos.addFromEbi(input);
 			} catch (error) {
 				this.warn(`Cound not parse line. ${error.message}: ${input}`);
 			}

@@ -45,6 +45,7 @@ class Repos {
 	}
 
 	addFromEbi(result) {
+		result = JSON.parse(result);
 		let registry = path.parse(result.filepath).name;
 		registry = registry === 'package' ? 'npm' : registry;
 		const manifest = result.fileContents;
