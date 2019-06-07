@@ -20,8 +20,8 @@ const expectRepos = (reposToMigrate, expectedNames, count) => {
 	const extra = reposToMigrate.filter(repo => !expectedNames.includes(repo.name));
 	const extraNames = extra.map(repo => repo.name);
 	const missedNames = expectedNames.filter(name => !reposToMigrate.find(repo => repo.name === name));
-	proclaim.equal(extraNames.length, 0, `Extra repos of migration ${count + 1}: ${extraNames}.`);
-	proclaim.equal(missedNames.length, 0, `Missed repos of migration ${count + 1}: ${missedNames}.`);
+	proclaim.equal(extraNames.length, 0, `Extra repos of migration ${count + 1}: ${extraNames}. Expected: ${expectedNames}`);
+	proclaim.equal(missedNames.length, 0, `Missed repos of migration ${count + 1}: ${missedNames}. Expected: ${expectedNames}`);
 };
 
 const getGuru = (target, repos) => {

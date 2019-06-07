@@ -42,19 +42,26 @@ class Guru {
 	async * getMigration() {
 		const completed = new Set();
 		const retry = [];
-		const migrate = [this.target];
-		let result = [];
-		let countSinceRetry = 0;
+		let migrate = [this.target];
 
 		// Migrate down the tree.
 		while (migrate.length > 0 || retry.length > 0) {
-			const source = migrate.length <= 0 ? retry : migrate;
-			const repo = source.shift();
-			result = this.getNextMigration(repo, retry, completed);
-			countSinceRetry = source === retry ? 0 : countSinceRetry + 1;
-			migrate.push(...result);
+			const result = [];
+			[retry, migrate].forEach(source => {
+				source.forEach(repo => {
+					// Remove from retry list if present.
+					retry.forEach(retryRepo => {
+						if (repo === retryRepo) {
+							retry.shift();
+						}
+					});
+					// Get migrations.
+					result.push(...this.getNextMigration(repo, retry, completed));
+				});
+			});
+			migrate = result;
 			if (result.length > 0) {
-				yield { repo, dependents: result };
+				yield { dependents: result, done: migrate.length === 0 && retry.length === 0};
 			}
 		}
 	}
