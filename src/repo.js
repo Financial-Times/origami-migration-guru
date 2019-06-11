@@ -11,7 +11,7 @@ class Repo {
 		this.manifests = new Map();
 	}
 
-	getName(registry = null) {
+	getNameFromManifest(registry = null) {
 		if (registry) {
 			validateRegistry(registry);
 			const manifest = this.manifests.get(registry);
@@ -20,7 +20,7 @@ class Repo {
 		return this.name;
 	}
 
-	getDependencies(registry = null) {
+	getDependencyNameFromManifest(registry = null) {
 		if (registry) {
 			validateRegistry(registry);
 		}

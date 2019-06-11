@@ -3,21 +3,41 @@ const Repo = require('./repo');
 
 class Repos {
 	constructor() {
-		this.repos = [];
+		this._repos = [];
 	}
 
+	getAll() {
+		return this._repos;
+	}
+
+	/**
+	 * @param {String} name The name of the repo.
+	 * @return {Repo|null} - The found repo.
+	 */
 	getOneForName(name) {
-		return this.repos.filter(repo => repo.name === name)[0];
+		const repos = this._repos.filter(repo => repo.name === name);
+		if (repos.length <= 0) {
+			throw new Error(`Found no repos by the name "${name}".`);
+		}
+		return repos[0];
 	}
 
+	/**
+	 * @param {Repo} repo The repo to find dependents for.
+	 * @return {Array<Repo>} - All repos which are direct dependents.
+	 */
 	getDirectDependents(repo) {
 		const name = repo.name;
-		return this.repos.filter(repo => {
-			const dependencies = repo.getDependencies();
+		return this._repos.filter(repo => {
+			const dependencies = repo.getDependencyNameFromManifest();
 			return dependencies.includes(name);
 		});
 	}
 
+	/**
+	 * @param {Repo} repo The repo to find dependents for.
+	 * @return {Array<Repo>} - All repos which are dependents, direct or indirect.
+	 */
 	getDependents(repo) {
 		const dependents = new Map();
 		this.getDirectDependents(repo).forEach(dependent => {
@@ -29,16 +49,19 @@ class Repos {
 		return Array.from(dependents.values());
 	}
 
+	/**
+	 * @param {Repo} repo The repo to get dependencies for.
+	 * @return {Array<String>} - All repos which are dependencies of the given repo.
+	 */
 	getDependencies(repo) {
 		const dependencies = new Map();
-		const dependencyNames = repo.getDependencies();
-		const directDependencies = this.repos.filter(repo => dependencyNames.includes(repo.name));
+		const dependencyNames = repo.getDependencyNameFromManifest();
+		const directDependencies = this._repos.filter(repo => dependencyNames.includes(repo.name));
 		directDependencies.forEach(directDependency => {
 			dependencies.set(directDependency.name, directDependency);
-			const subDependencyNames = directDependency.getDependencies();
-			const subDependencies = this.repos.filter(repo => subDependencyNames.includes(repo.name));
-			subDependencies.forEach(dependency => {
-				dependencies.set(dependency.name, dependency);
+			const subDependencies = this.getDependencies(directDependency);
+			subDependencies.forEach(subDependency => {
+				dependencies.set(subDependency.name, subDependency);
 			});
 		});
 		return Array.from(dependencies.values());
@@ -59,10 +82,10 @@ class Repos {
 			return;
 		}
 		// Success. Add result.
-		let repo = this.repos.find(repo => repo.id === result.repository);
+		let repo = this._repos.find(repo => repo.id === result.repository);
 		if (!repo) {
 			repo = new Repo(result.repository);
-			this.repos.push(repo);
+			this._repos.push(repo);
 		}
 		repo.addManifest(registry, result.fileContents);
 	}

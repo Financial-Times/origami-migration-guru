@@ -6,9 +6,6 @@ class Guru {
 	constructor(targetName, repos) {
 		this.repos = repos;
 		this.target = repos.getOneForName(targetName);
-		if (!this.target) {
-			throw new Error(`Could not find a repo for "${targetName}".`);
-		}
 		this._targetDependents = repos.getDependents(this.target);
 		this._directTargetDependents = repos.getDirectDependents(this.target);
 	}
