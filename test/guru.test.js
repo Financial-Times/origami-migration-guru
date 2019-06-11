@@ -39,6 +39,9 @@ const assertMigrations = async (guru, expectedMigrations) => {
 		}
 		count++;
 	}
+	if (count === 0 && expectedMigrations.length > 0) {
+		proclaim.ok(false, 'No migration steps returned.');
+	}
 };
 
 describe('Guru Migration', () => {

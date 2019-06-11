@@ -1,67 +1,92 @@
 class Guru {
+	/**
+	 * @param {String} targetName The name of the repo which needs a migration guide.
+	 * @param {Repos} repos A repos instance with details on each repo to evaluate.
+	 */
 	constructor(targetName, repos) {
 		this.repos = repos;
 		this.target = repos.getOneForName(targetName);
 		if (!this.target) {
 			throw new Error(`Could not find a repo for "${targetName}".`);
 		}
-		this.impactedRepos = repos.getDependents(this.target);
+		this._targetDependents = repos.getDependents(this.target);
+		this._directTargetDependents = repos.getDirectDependents(this.target);
 	}
 
+	/**
+	 * @return {Array<Repo>} - All direct dependents of the target repo.
+	 */
 	getDirectlyImpactedRepos() {
-		return this.repos.getDirectDependents(this.target);
+		return this._directTargetDependents;
 	}
 
+	/**
+	 * @return {Array<Repo>} - Total dependents of the target repo.
+	 */
 	getImpactedRepos() {
-		return this.impactedRepos;
+		return this._targetDependents;
 	}
 
-	getNextMigration(repo, retry, completed) {
+	/**
+	 * The dependents to migrate next given a repo and already completed migrations.
+	 * @typedef {Object} Guru~DependentsToMigrate
+	 * @property {Array<Repo>} migrateable - The dependent repos to migrate next.
+	 * @property {Boolean} complete - True if all dependents could be migrated.
+	 */
+
+	/**
+	 * @param {Repo} repo The repo to get migratable dependents for.
+	 * @param {Set<Repo>} completed Repos which have already been migrated.
+	 * @return {Guru~DependentsToMigrate} - Migration details for the given repo.
+	 */
+	getDependentsToMigrate(repo, completed = new Set()) {
 		const direct = this.repos.getDirectDependents(repo);
-		const nonMigrated = direct.filter(dependent => !completed.has(dependent.name));
-		// We want to migrate direct dependents which
-		// do not depend on another direct dependency which
-		// hasn't yet beem migrated.
+		const nonMigrated = direct.filter(dependent => !completed.has(dependent));
+		// We want to migrate direct dependents which do not have a dependency
+		// which also needs migrating. Such a dependency should be migrated first.
 		const migrateable = nonMigrated.filter(dependent => {
-			const nonMigratedImpactedRepos = this.impactedRepos.filter(dependent => !completed.has(dependent.name));
+			const nonMigratedImpactedRepos = this.getImpactedRepos().filter(dependent => !completed.has(dependent));
 			const nonMigratedImpactedReposNames = nonMigratedImpactedRepos.map(dependent => dependent.name);
 			const dependencies = this.repos.getDependencies(dependent);
 			const found = dependencies.find(dependency => nonMigratedImpactedReposNames.includes(dependency.name));
 			return !found;
 		});
-		// Not all direct dependencies could be migrated first time.
-		if (nonMigrated.length !== migrateable.length) {
-			retry.push(repo);
-		}
-		migrateable.forEach(repo => {
-			completed.add(repo.name);
-		});
-		return migrateable;
+		return { migrateable, complete: nonMigrated.length === migrateable.length};
 	}
 
 	async * getMigration() {
+		// Repos which have been migrated fully.
 		const completed = new Set();
-		const retry = [];
-		let migrate = [this.target];
-
-		// Migrate down the tree.
-		while (migrate.length > 0 || retry.length > 0) {
-			const result = [];
-			[retry, migrate].forEach(source => {
-				source.forEach(repo => {
-					// Remove from retry list if present.
-					retry.forEach(retryRepo => {
-						if (repo === retryRepo) {
-							retry.shift();
-						}
-					});
-					// Get migrations.
-					result.push(...this.getNextMigration(repo, retry, completed));
-				});
+		// Repos which are not completely migrated yet.
+		let incomplete = new Set([this.target]);
+		while (incomplete.size > 0) {
+			const retry = new Set();
+			const migration = new Set();
+			// 1. Find next migration set for incompleted repos.
+			incomplete.forEach(repo => {
+				// 1b. Get dependents which need migration.
+				const result = this.getDependentsToMigrate(repo, completed);
+				result.migrateable.forEach(repo => migration.add(repo));
+				// 1c. If a dependent cannot be migrated yet due to
+				// one of its dependencies, try to migrate the dependents of
+				// this repo again.
+				if (!result.complete) {
+					retry.add(repo);
+				}
 			});
-			migrate = result;
-			if (result.length > 0) {
-				yield { dependents: result, done: migrate.length === 0 && retry.length === 0};
+
+			// 2. Migrate dependents in the next round.
+			incomplete = new Set();
+			migration.forEach(repo => {
+				incomplete.add(repo);
+				completed.add(repo);
+			});
+
+			// 2b. Retry repos which did not complete this time.
+			retry.forEach(repo => incomplete.add(repo));
+
+			if (migration.size > 0) {
+				yield { dependents: [...migration], done: incomplete.size === 0};
 			}
 		}
 	}
