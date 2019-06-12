@@ -38,17 +38,16 @@ class Guru {
 	 */
 	getDependentsToMigrate(repo, completed = new Set()) {
 		const direct = this.repos.getDirectDependents(repo);
-		const nonMigrated = direct.filter(dependent => !completed.has(dependent));
+		const directRemaining = direct.filter(dependent => !completed.has(dependent));
 		// We want to migrate direct dependents which do not have a dependency
 		// which also needs migrating. Such a dependency should be migrated first.
-		const migrateable = nonMigrated.filter(dependent => {
-			const nonMigratedImpactedRepos = this.getImpactedRepos().filter(dependent => !completed.has(dependent));
-			const nonMigratedImpactedReposNames = nonMigratedImpactedRepos.map(dependent => dependent.name);
+		const migrateable = directRemaining.filter(dependent => {
+			const remaining = this.getImpactedRepos().filter(dependent => !completed.has(dependent));
 			const dependencies = this.repos.getDependencies(dependent);
-			const found = dependencies.find(dependency => nonMigratedImpactedReposNames.includes(dependency.name));
+			const found = dependencies.some(dependency => remaining.includes(dependency));
 			return !found;
 		});
-		return { migrateable, complete: nonMigrated.length === migrateable.length};
+		return { migrateable, complete: directRemaining.length === migrateable.length};
 	}
 
 	async * getMigration() {

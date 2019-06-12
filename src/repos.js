@@ -55,8 +55,7 @@ class Repos {
 	 */
 	getDependencies(repo) {
 		const dependencies = new Map();
-		const dependencyNames = repo.getDependencyNameFromManifest();
-		const directDependencies = this._repos.filter(repo => dependencyNames.includes(repo.name));
+		const directDependencies = this.getDirectDependencies(repo);
 		directDependencies.forEach(directDependency => {
 			dependencies.set(directDependency.name, directDependency);
 			const subDependencies = this.getDependencies(directDependency);
@@ -65,6 +64,11 @@ class Repos {
 			});
 		});
 		return Array.from(dependencies.values());
+	}
+
+	getDirectDependencies(repo) {
+		const dependencyNames = repo.getDependencyNameFromManifest();
+		return this._repos.filter(repo => dependencyNames.includes(repo.name));
 	}
 
 	addFromEbi(result) {

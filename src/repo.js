@@ -28,7 +28,10 @@ class Repo {
 		return registries.reduce((dependencies, registry) => {
 			const manifest = this.manifests.get(registry);
 			if (manifest && manifest.dependencies) {
-				return dependencies.concat(Object.keys(manifest.dependencies));
+				// remove org
+				// todo: instead use npm manifest and have a workaround for ~o- components~ components with bower.json also?
+				// todo, handle duplicates at different versions "next-tour-page (n-ui, n-myft-ui, n-myft-ui, n-ui)"
+				return dependencies.concat(Object.keys(manifest.dependencies).map(name => name.replace(/@[^/]+\//g, '')));
 			}
 			return dependencies;
 		}, []);
