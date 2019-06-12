@@ -5,30 +5,27 @@ class Dot {
 
 	async getDotMigration() {
 		const target = this.guru.target;
+		const repos = this.guru.repos;
 		let migrationStepsContent = '';
 		let num = 0;
+		let previousResult;
 		for await (const result of this.guru.getMigration()) {
 			num++;
 			const names = result.dependents.map(repo => repo.name);
+			// Put results in a cluster.
 			migrationStepsContent += `\n\tsubgraph cluster_${num} {\n\t\tlabel = "step #${num}";\n\t\t${names.map(name => `"${name}";`).join(' ')}\n\t}`;
+			// Connect results to previous cluster.
+			const dependents = previousResult ? previousResult.dependents : [target];
+			dependents.forEach(previous => {
+				result.dependents.forEach(current => {
+					migrationStepsContent += repos.getDependents(previous).includes(current) ? `\n\t"${previous.name}" -> "${current.name}"\n` : '';
+				});
+
+			});
+			previousResult = result;
 		}
 
-		const dotdone = {};
-		const repos = this.guru.repos;
-		function getDependentLinksContent(name) {
-			dotdone[name] = dotdone[name] || [];
-			const repo = repos.getOneForName(name);
-			const directDependents = repos.getDirectDependents(repo);
-			const dependentstoAdd = directDependents.filter(dependent => dotdone[name].includes(dependent.name) === false);
-			return dependentstoAdd.map(dependent => {
-				dotdone[name].push(dependent.name);
-				const direct = `\t"${name}" -> "${dependent.name}"\n`;
-				const indirect = getDependentLinksContent(dependent.name);
-				return direct + indirect;
-			}).join('');
-		}
-
-		return `digraph {\n${migrationStepsContent}\n ${getDependentLinksContent(target.name)}}`;
+		return `digraph {\nrankdir=LR\nsplines=ortho\nconcentrate=true\n${migrationStepsContent}\n}`;
 	}
 
 }
