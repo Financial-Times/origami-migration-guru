@@ -40,9 +40,9 @@ class TreeCommand extends Command {
 			for await (const result of guru.getMigration()) {
 				const migrationLog = result.dependents.map(repo => {
 					const name = repo.name;
-					const dependenciesWhichRequiredUpgrade = repo.getDependencyNameFromManifest().filter(name => {
-						return name === args.component || impactedRepos.find(repo => repo.name === name);
-					});
+					const dependenciesWhichRequiredUpgrade = repo.getDependencies().filter(dependency => {
+						return repos.repoMatchesDependency(guru.target, dependency) || impactedRepos.find(repo => repos.repoMatchesDependency(repo, dependency));
+					}).map(d => `${d.source}:${d.name}`);
 					return `${chalk.green(name)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
 				}).join('\n');
 				this.log(migrationLog);

@@ -22,15 +22,20 @@ class Repos {
 		return repos[0];
 	}
 
+	repoMatchesDependency(repo, dependency) {
+		return dependency.name === repo.getName(dependency.source);
+	}
+
 	/**
 	 * @param {Repo} repo The repo to find dependents for.
 	 * @return {Array<Repo>} - All repos which are direct dependents.
 	 */
 	getDirectDependents(repo) {
-		const name = repo.name;
-		return this._repos.filter(repo => {
-			const dependencies = repo.getDependencyNameFromManifest();
-			return dependencies.includes(name);
+		return this._repos.filter(current => {
+			const dependencies = current.getDependencies();
+			return dependencies.some(dependency => {
+				return this.repoMatchesDependency(repo, dependency);
+			});
 		});
 	}
 
@@ -67,7 +72,7 @@ class Repos {
 	}
 
 	getDirectDependencies(repo) {
-		const dependencyNames = repo.getDependencyNameFromManifest();
+		const dependencyNames = repo.getDependencies().map(d => d.name);
 		return this._repos.filter(repo => dependencyNames.includes(repo.name));
 	}
 

@@ -1,3 +1,5 @@
+const Dependency = require('./dependency');
+
 function validateRegistry(registry) {
 	if (!['bower', 'npm'].includes(registry)) {
 		throw new Error(`Registry ${registry} must be either "npm" or "bower".`);
@@ -8,38 +10,43 @@ class Repo {
 	constructor(repoName) {
 		this.id = repoName;
 		[this.org, this.name] = repoName.split('/');
-		this.manifests = new Map();
+		this.manifestNames = new Map();
+		this.dependencies = new Map([
+			['npm', new Set()],
+			['bower', new Set()]
+		]);
 	}
 
-	getNameFromManifest(registry = null) {
+	getName(registry = null) {
 		if (registry) {
 			validateRegistry(registry);
-			const manifest = this.manifests.get(registry);
-			return manifest && manifest.name ? manifest.name : this.name;
+			return this.manifestNames.get(registry);
 		}
 		return this.name;
 	}
 
-	getDependencyNameFromManifest(registry = null) {
+	getDependencies(registry = null) {
 		if (registry) {
 			validateRegistry(registry);
 		}
 		const registries = registry ? [registry] : ['bower', 'npm'];
 		return registries.reduce((dependencies, registry) => {
-			const manifest = this.manifests.get(registry);
-			if (manifest && manifest.dependencies) {
-				// remove org
-				// todo: instead use npm manifest and have a workaround for ~o- components~ components with bower.json also?
-				// todo, handle duplicates at different versions "next-tour-page (n-ui, n-myft-ui, n-myft-ui, n-ui)"
-				return dependencies.concat(Object.keys(manifest.dependencies).map(name => name.replace(/@[^/]+\//g, '')));
-			}
-			return dependencies;
+			const registryDependencies = this.dependencies.get(registry);
+			return dependencies.concat([...registryDependencies]);
 		}, []);
 	}
 
 	addManifest(registry, manifest) {
 		validateRegistry(registry);
-		this.manifests.set(registry, JSON.parse(manifest));
+		manifest = JSON.parse(manifest);
+		if (manifest.name) {
+			this.manifestNames.set(registry, manifest.name);
+		}
+		if (manifest.dependencies) {
+			for (const [name, version] of Object.entries(manifest.dependencies)) {
+				this.dependencies.get(registry).add(new Dependency(name, version, registry));
+			}
+		}
 	}
 }
 
