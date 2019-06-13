@@ -49,6 +49,7 @@ describe('Guru Migration', () => {
 
 	const tests = [
 		{
+			description: `a single dependency`,
 			visual: `
 				+---+
 				| b |
@@ -69,6 +70,7 @@ describe('Guru Migration', () => {
 			]
 		},
 		{
+			description: `a single direct and indirect dependency`,
 			visual: `
 				+---+
 				| c |
@@ -97,48 +99,49 @@ describe('Guru Migration', () => {
 			]
 		},
 		{
+			description: 'nested direct and indirect interdependencies',
 			visual: `
-  		        +---+     +---+
-  		        | g | <-- | h |
-  		        +---+     +---+
-  		          |
-  		          |
-  		          v
-  		        +---+     +---+     +---+
-  		        | f | <-- | j | --> | i | -+
-  		        +---+     +---+     +---+  |
-  		          |         |         |    |
-  		          |         |         |    |
-  		          v         |         |    |
-  		        +---+       |         |    |
-  		        | c | -+    |         |    |
-  		        +---+  |    |         |    |
-  		          |    |    |         |    |
-  		          |    |    |         |    |
-  		          v    |    |         |    |
-  		        +---+  |    |         |    |
-  		     +- | e |  |    |         |    |
-  		     |  +---+  |    |         |    |
-  		     |    |    |    |         |    |
-  		     |    |    |    |         |    |
-  		     |    v    |    |         |    |
-  		     |  +---+  |    |         |    |
-  		+----+> | d |  |    |         |    |
-  		|    |  +---+  |    |         |    |
-  		|    |    |    |    |         |    |
-  		|    |    |    |    |         |    |
-  		|    |    v    |    |         |    |
-  		|    |  +---+  |    |         |    |
-  		|    |  | b | <+    |         |    |
-  		|    |  +---+       |         |    |
-  		|    |    |         |         |    |
-  		|    |    |         |         |    |
-  		|    |    v         v         |    |
-  		|    |  +-------------+       |    |
-  		|    +> |      a      | <-----+    |
-  		|       +-------------+            |
-  		|                                  |
-  		+----------------------------------+
+  			        +---+     +---+
+  			        | g | <-- | h |
+  			        +---+     +---+
+  			          |
+  			          |
+  			          v
+  			        +---+     +---+     +---+
+  			        | f | <-- | j | --> | i | -+
+  			        +---+     +---+     +---+  |
+  			          |         |         |    |
+  			          |         |         |    |
+  			          v         |         |    |
+  			        +---+       |         |    |
+  			        | c | -+    |         |    |
+  			        +---+  |    |         |    |
+  			          |    |    |         |    |
+  			          |    |    |         |    |
+  			          v    |    |         |    |
+  			        +---+  |    |         |    |
+  			     +- | e |  |    |         |    |
+  			     |  +---+  |    |         |    |
+  			     |    |    |    |         |    |
+  			     |    |    |    |         |    |
+  			     |    v    |    |         |    |
+  			     |  +---+  |    |         |    |
+  			+----+> | d |  |    |         |    |
+  			|    |  +---+  |    |         |    |
+  			|    |    |    |    |         |    |
+  			|    |    |    |    |         |    |
+  			|    |    v    |    |         |    |
+  			|    |  +---+  |    |         |    |
+  			|    |  | b | <+    |         |    |
+  			|    |  +---+       |         |    |
+  			|    |    |         |         |    |
+  			|    |    |         |         |    |
+  			|    |    v         v         |    |
+  			|    |  +-------------+       |    |
+  			|    +> |      a      | <-----+    |
+  			|       +-------------+            |
+  			|                                  |
+  			+----------------------------------+
 			`,
 			repos: {
 				a: [],
@@ -162,10 +165,41 @@ describe('Guru Migration', () => {
 				['h'],
 			]
 		},
+		{
+			description: 'two dependents "c" and "d" share a direct and indirect dependency of the target, but "d" also depends on the other "c"',
+			visual: `
+			   +---+     +---+
+			+- | c | <-- | d | -+
+			|  +---+     +---+  |
+			|    |         |    |
+			|    |         |    |
+			|    |         v    |
+			|    |       +---+  |
+			+----+-----> | b |  |
+			     |       +---+  |
+			     |         |    |
+			     |         |    |
+			     |         v    |
+			     |       +---+  |
+			     +-----> | a | <+
+			             +---+
+			`,
+			repos: {
+				a: [],
+				b: ['a'],
+				c: ['a', 'b'],
+				d: ['a', 'b', 'c']
+			},
+			expectedMigrations: [
+				['b'],
+				['c'],
+				['d']
+			]
+		},
 	];
 
-	for (const {visual, repos, expectedMigrations} of tests) {
-		describe(`Of a dependency tree:\n${visual}`, () => {
+	for (const { visual, description, repos, expectedMigrations } of tests) {
+		describe(`Of a dependency tree with ${description}:\n${visual}`, () => {
 			const guru = getGuru(target, repos);
 			it('Gives the correct number of direct dependents.', async () => {
 				const dependencyLists = Object.values(repos);
