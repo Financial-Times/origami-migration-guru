@@ -5,7 +5,7 @@ class Guru {
 	 */
 	constructor(targetName, repos) {
 		this.repos = repos;
-		this.target = repos.getOneForName(targetName);
+		this.target = repos.findOne(targetName);
 		this._targetDependents = repos.getDependents(this.target);
 		this._directTargetDependents = repos.getDirectDependents(this.target);
 	}

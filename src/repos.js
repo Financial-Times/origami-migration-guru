@@ -14,11 +14,22 @@ class Repos {
 	 * @param {String} name The name of the repo.
 	 * @return {Repo|null} - The found repo.
 	 */
-	getOneForName(name) {
-		const repos = this._repos.filter(repo => repo.name === name);
+	findOne(name) {
+		// Find repos by name. E.g. "o-crossword"
+		let repos = this._repos.filter(repo => repo.name === name);
+		// If that didn't work, try by id. E.g. "ftlabs/o-crossword"
+		if (repos.length <= 0) {
+			repos = this._repos.filter(repo => repo.id === name);
+		}
+		// Not found.
 		if (repos.length <= 0) {
 			throw new Error(`Found no repos by the name "${name}".`);
 		}
+		// Multiple found.
+		if (repos.length > 1) {
+			throw new Error(`Found two repos by the name "${name}" (${repos.map(r => r.id).join(', ')}). Run again with one of these.`);
+		}
+		// Success.
 		return repos[0];
 	}
 
