@@ -2,6 +2,7 @@ class Guru {
 	/**
 	 * @param {String} targetName The name of the repo which needs a migration guide.
 	 * @param {Repos} repos A repos instance with details on each repo to evaluate.
+	 * @throws {SingleRepoNotFoundError} when a repo for the target name cannot be found
 	 */
 	constructor(targetName, repos) {
 		this.repos = repos;

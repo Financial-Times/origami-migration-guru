@@ -1,6 +1,15 @@
 const path = require('path');
 const Repo = require('./repo');
 
+class SingleRepoNotFoundError extends Error {
+	constructor(message, query, foundRepos) {
+		super(message);
+		this.name = 'SingleRepoNotFoundError';
+		this.query = query;
+		this.repos = foundRepos;
+	}
+}
+
 class Repos {
 	constructor() {
 		this._repos = [];
@@ -21,13 +30,9 @@ class Repos {
 		if (repos.length <= 0) {
 			repos = this._repos.filter(repo => repo.id === name);
 		}
-		// Not found.
-		if (repos.length <= 0) {
-			throw new Error(`Found no repos by the name "${name}".`);
-		}
-		// Multiple found.
-		if (repos.length > 1) {
-			throw new Error(`Found two repos by the name "${name}" (${repos.map(r => r.id).join(', ')}). Run again with one of these.`);
+		// Found more or less than one repo.
+		if (repos.length !== 1) {
+			throw new SingleRepoNotFoundError(`Found ${repos.length} repos which match "${name}".`, name, repos);
 		}
 		// Success.
 		return repos[0];
@@ -112,3 +117,4 @@ class Repos {
 }
 
 module.exports = Repos;
+module.exports = { Repos, SingleRepoNotFoundError};

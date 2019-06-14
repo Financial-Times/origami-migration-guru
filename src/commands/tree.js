@@ -1,13 +1,45 @@
 const { Command, flags } = require('@oclif/command');
 const readline = require('readline');
-const Repos = require('../repos');
+const {Repos, SingleRepoNotFoundError} = require('../repos');
 const Guru = require('../guru');
 const Dot = require('../dot');
-const { cli } = require('cli-ux');
+const { Confirm, Select } = require('enquirer');
 const { once } = require('events');
 const chalk = require('chalk');
 
 class TreeCommand extends Command {
+
+	async confirmTargetRepoName(query, reposFound) {
+		try {
+			const choice = await new Select({
+				name: 'repo',
+				message: `${reposFound.length} repos for "${query}" were found, pick one to continue`,
+				choices: reposFound.map(r => r.id)
+			}).run();
+
+			return choice;
+		} catch (error) {
+			process.exit();
+		}
+	}
+
+	async getGuru(name, repos) {
+		try {
+			// Get migration guru for repo name and repos.
+			return new Guru(name, repos);
+		} catch (error) {
+			if (error instanceof SingleRepoNotFoundError) {
+				// Error if no repos are found.
+				if (!error.repos || error.repos.length === 0) {
+					this.log(chalk.red(`Could not find a repo by name "${error.query}" amoung the ${repos.getAll().length} repos given.`));
+					process.exit();
+				}
+				// If multiple repos found for the name, prompt for a choice.
+				const choice = await this.confirmTargetRepoName(error.query, error.repos);
+				return new Guru(choice, repos);
+			}
+		}
+	}
 
 	async run() {
 		const { args, flags } = this.parse(TreeCommand);
@@ -28,12 +60,15 @@ class TreeCommand extends Command {
 		await once(lines, 'close');
 
 		// create migration guru to guide us for a given target and repos
-		const guru = new Guru(name, repos);
+		const guru = await this.getGuru(name, repos);
 
 		// guide: interactive migration, text based, step-by-step
 		if (flags.format === 'guide') {
-			const cool = await cli.confirm(`Ready to update ${name}? (y/n)`);
-			if (!cool) {
+			const ready = await new Confirm({
+				name: 'ready',
+				message: `Ready to update ${name}?`
+			}).run();
+			if (!ready) {
 				process.exit();
 			}
 			const impactedRepos = guru.getImpactedRepos();
@@ -46,7 +81,11 @@ class TreeCommand extends Command {
 					return `${chalk.green(name)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
 				}).join('\n');
 				this.log(migrationLog);
-				await cli.anykey();
+				const ready = await new Confirm({
+					name: 'continue',
+					message: 'Continue to the nect step?'
+				}).run();
+				return ready;
 			}
 		}
 
