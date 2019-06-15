@@ -81,11 +81,10 @@ class TreeCommand extends Command {
 					return `${chalk.green(name)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
 				}).join('\n');
 				this.log(migrationLog);
-				const ready = await new Confirm({
+				await new Confirm({
 					name: 'continue',
 					message: 'Continue to the nect step?'
 				}).run();
-				return ready;
 			}
 		}
 
