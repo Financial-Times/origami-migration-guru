@@ -72,24 +72,34 @@ class Repos {
 
 	/**
 	 * @param {Repo} repo The repo to get dependencies for.
+	 * @param {Map} result A map of results for recursion.
+	 * @return {Array<String>} - All repos which are dependencies of the given repo.
+	 * @access private
+	 */
+	_getDependenciesRecursive(repo, result = new Map()) {
+		const directDependencies = this.getDirectDependencies(repo);
+		directDependencies.forEach(directDependency => {
+			if (!result.has(directDependency.name)) {
+				result.set(directDependency.name, directDependency);
+				this._getDependenciesRecursive(directDependency, result);
+			}
+		});
+		return Array.from(result.values());
+	}
+
+	/**
+	 * @param {Repo} repo The repo to get dependencies for.
 	 * @return {Array<String>} - All repos which are dependencies of the given repo.
 	 */
 	getDependencies(repo) {
-		const dependencies = new Map();
-		const directDependencies = this.getDirectDependencies(repo);
-		directDependencies.forEach(directDependency => {
-			dependencies.set(directDependency.name, directDependency);
-			const subDependencies = this.getDependencies(directDependency);
-			subDependencies.forEach(subDependency => {
-				dependencies.set(subDependency.name, subDependency);
-			});
-		});
-		return Array.from(dependencies.values());
+		return this._getDependenciesRecursive(repo);
 	}
 
 	getDirectDependencies(repo) {
-		const dependencyNames = repo.getDependencies().map(d => d.name);
-		return this._repos.filter(repo => dependencyNames.includes(repo.name));
+		const dependencies = repo.getDependencies();
+		return this._repos.filter(repo => dependencies.find(
+			dependency => this.repoMatchesDependency(repo, dependency)
+		));
 	}
 
 	addFromEbi(result) {
@@ -116,5 +126,4 @@ class Repos {
 	}
 }
 
-module.exports = Repos;
 module.exports = { Repos, SingleRepoNotFoundError};
