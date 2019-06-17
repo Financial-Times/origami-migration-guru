@@ -38,7 +38,7 @@ class Repo {
 
 	addManifest(registry, manifest) {
 		validateRegistry(registry);
-		manifest = JSON.parse(manifest);
+		manifest = typeof manifest === 'string' ? JSON.parse(manifest) : manifest;
 		if (manifest.name) {
 			this.manifestNames.set(registry, manifest.name);
 		}
