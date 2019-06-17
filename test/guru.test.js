@@ -1,6 +1,6 @@
 /* eslint-disable no-loop-func */
 const Guru = require('../src/guru');
-const Repos = require('../src/repos');
+const { Repos } = require('../src/repos');
 const proclaim = require('proclaim');
 
 const generateEbiResult = (component, dependencies) => {
