@@ -72,7 +72,9 @@ class TreeCommand extends Command {
 				process.exit();
 			}
 			const impactedRepos = guru.getImpactedRepos();
+			let currentStepNumber = 0;
 			for await (const result of guru.getMigration()) {
+				currentStepNumber++;
 				const migrationLog = result.dependents.map(repo => {
 					const name = repo.name;
 					const dependenciesWhichRequiredUpgrade = repo.getDependencies().filter(dependency => {
@@ -80,12 +82,13 @@ class TreeCommand extends Command {
 					}).map(d => `${d.source}:${d.name}`);
 					return `${chalk.green(name)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
 				}).join('\n');
-				this.log(migrationLog);
+				this.log(migrationLog + '\n');
 				await new Confirm({
 					name: 'continue',
-					message: 'Continue to the nect step?'
+					message: `Continue to step ${currentStepNumber + 1} of the migration?`
 				}).run();
 			}
+			this.log(chalk.green('\nAll done!\n'));
 		}
 
 		// dot: generate a graphviz `.dot` to visualise the migration
