@@ -49,7 +49,7 @@ describe('Guru Migration', () => {
 
 	const tests = [
 		{
-			description: `a single dependency`,
+			description: 'a single dependency',
 			visual: `
 				+---+
 				| b |
@@ -70,7 +70,7 @@ describe('Guru Migration', () => {
 			]
 		},
 		{
-			description: `a single direct and indirect dependency`,
+			description: 'a single direct and indirect dependency',
 			visual: `
 				+---+
 				| c |
