@@ -1,5 +1,6 @@
 const path = require('path');
 const Repo = require('./repo');
+const Dependency = require('./dependency');
 
 /**
  * @param {*} repo - To validate is a Repo object.
@@ -8,6 +9,16 @@ const Repo = require('./repo');
 function validateRepo(repo) {
 	if (!(repo instanceof Repo)) {
 		throw new TypeError('Was not given a target repo.');
+	}
+}
+
+/**
+ * @param {*} dependency - To validate is a Dependency object.
+ * @throws {TypeError}
+ */
+function validateDependency(dependency) {
+	if (!(dependency instanceof Dependency)) {
+		throw new TypeError('Was not given a dependency.');
 	}
 }
 
@@ -57,8 +68,9 @@ class Repos {
 	 * @param {Dependency} dependency The dependency to compare the repo against.
 	 * @return {Boolean} - True if the dependency represents the repo.
 	 */
-	repoMatchesDependency(repo, dependency) {
+	static repoMatchesDependency(repo, dependency) {
 		validateRepo(repo);
+		validateDependency(dependency);
 		return dependency.name === repo.getName(dependency.source);
 	}
 
@@ -71,7 +83,7 @@ class Repos {
 		return this._repos.filter(current => {
 			const dependencies = current.getDependencies();
 			return dependencies.some(dependency => {
-				return this.repoMatchesDependency(repo, dependency);
+				return Repos.repoMatchesDependency(repo, dependency);
 			});
 		});
 	}
@@ -126,7 +138,7 @@ class Repos {
 		validateRepo(repo);
 		const dependencies = repo.getDependencies();
 		return this._repos.filter(repo => dependencies.find(
-			dependency => this.repoMatchesDependency(repo, dependency)
+			dependency => Repos.repoMatchesDependency(repo, dependency)
 		));
 	}
 

@@ -1,12 +1,13 @@
 const { Repos } = require('../src/repos');
 const Repo = require('../src/repo');
+const Dependency = require('../src/dependency');
 const proclaim = require('proclaim');
 
 function createRepos(repoData) {
 	const repos = new Repos();
 	repoData.forEach(data => {
 		const ebi = {
-			filepath: 'bower.json',
+			filepath: data.registry === 'npm' ? 'package.json' : 'bower.json',
 			repository: data.id ? data.id : `Financial-Times/${data.name}`,
 			fileContents: {
 				name: data.name,
@@ -253,6 +254,52 @@ describe('Repos', () => {
 
 		it('Errors when no repos are given.', () => {
 			proclaim.throws(() => repos.getDependents(undefined));
+		});
+	});
+
+	describe('repoMatchesDependency', () => {
+
+		beforeEach(() => {
+			repos = createRepos([
+				{
+					name: 'a',
+					registry: 'npm'
+				},
+				{
+					name: 'b',
+					registry: 'bower'
+				}
+			]);
+		});
+
+		it('Returns true when the dependency represents the give repo', () => {
+			// Todo: Remove find one call so `getDirectDependents` test
+			// does not rely on `findOne` working.
+			const repo = repos.findOne('a');
+			const dependency = new Dependency('a', '^1.0.0', 'npm');
+			proclaim.isTrue(Repos.repoMatchesDependency(repo, dependency));
+		});
+
+		it('Returns false when the dependency does not represent the given repo due to a registry mismatch', () => {
+			const repo = repos.findOne('a');
+			const dependency = new Dependency('a', '^1.0.0', 'bower');
+			proclaim.isFalse(Repos.repoMatchesDependency(repo, dependency));
+		});
+
+		it('Returns false when the dependency does not represent the given repo due to a name mismatch', () => {
+			const repo = repos.findOne('a');
+			const dependency = new Dependency('c', '^1.0.0', 'npm');
+			proclaim.isFalse(Repos.repoMatchesDependency(repo, dependency));
+		});
+
+		it('Errors when no repo is given.', () => {
+			const dependency = new Dependency('c', '^1.0.0', 'npm');
+			proclaim.throws(() => Repos.repoMatchesDependency(undefined, dependency));
+		});
+
+		it('Errors when no dependency is given.', () => {
+			const repo = repos.findOne('a');
+			proclaim.throws(() => Repos.repoMatchesDependency(repo, undefined));
 		});
 	});
 
