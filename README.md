@@ -12,7 +12,7 @@ Generate a graph of dependents.
 >Requires `dot`.
 
 ```
-bin/run tree o-table --manifests="manifests/ebi.txt" --format=dot | dot -Tsvg > ~/Desktop/component.svg
+cat manifests/ebi.txt | bin/run tree o-table --format=dot | dot -Tsvg > ~/Desktop/component.svg
 ```
 
 ### interactive migration guide
@@ -20,7 +20,7 @@ bin/run tree o-table --manifests="manifests/ebi.txt" --format=dot | dot -Tsvg > 
 Find dependents and the order to migrate them, step by step.
 
 ```
-bin/run tree o-table --manifests="manifests/ebi.txt" --format=guide
+cat manifests/ebi.txt | bin/run tree o-table --format=guide
 ```
 
 ### Dependents Overview
@@ -28,5 +28,5 @@ bin/run tree o-table --manifests="manifests/ebi.txt" --format=guide
 Show the count and name of all dependents (direct and indirect).
 
 ```
-bin/run tree o-table --manifests="manifests/ebi.txt"
+cat manifests/ebi.txt | bin/run tree o-table
 ```

@@ -8,7 +8,6 @@ describe('tree', () => {
 		.command([
 			'tree',
 			'b',
-			'--manifests',
 			path.resolve(__dirname, '../fixtures/manifests/simple-one-to-one.txt')
 		])
 		.it('finds stats for a simple tree where "b" depends on "a"', ctx => {
@@ -24,10 +23,9 @@ describe('tree', () => {
 		.command([
 			'tree',
 			'b',
+			path.resolve(__dirname, '../fixtures/manifests/simple-one-to-one.txt'),
 			'--format',
-			'guide',
-			'--manifests',
-			path.resolve(__dirname, '../fixtures/manifests/simple-one-to-one.txt')
+			'guide'
 		])
 		.it('guides the migration path for a simple tree where "b" depends on "a"', ctx => {
 			expect(ctx.stdout).to.contain('a (b)'); // step 1, upgrade a (because of b)

@@ -6,6 +6,10 @@ const Dot = require('../dot');
 const { Confirm, Select } = require('enquirer');
 const { once } = require('events');
 const chalk = require('chalk');
+const fs = require('fs');
+const path = require('path');
+
+const tty = process.stdin.isTTY;
 
 class TreeCommand extends Command {
 
@@ -35,6 +39,10 @@ class TreeCommand extends Command {
 					process.exit();
 				}
 				// If multiple repos found for the name, prompt for a choice.
+				if (!tty) {
+					this.log(chalk.red(`${error.repos.length} repos for "${error.query}" were found, pick one to continue: ${error.repos.map(r => r.id)}`));
+					process.exit();
+				}
 				const choice = await this.confirmTargetRepoName(error.query, error.repos);
 				return new Guru(choice, repos);
 			}
@@ -45,10 +53,11 @@ class TreeCommand extends Command {
 		const { args, flags } = this.parse(TreeCommand);
 		const repos = new Repos();
 		const name = args.component;
+		const manifestFile = args.manifests ? path.resolve(__dirname, args.manifests) : '';
 
 		// Get manifests from given file.
 		const lines = readline.createInterface({
-			input: require('fs').createReadStream(flags.manifests)
+			input: tty ? fs.createReadStream(manifestFile) : process.stdin
 		});
 		lines.on('line', input => {
 			try {
@@ -57,6 +66,9 @@ class TreeCommand extends Command {
 				this.warn(`Cound not parse line. ${error.message}: ${input}`);
 			}
 		});
+		lines.on('close', () => {
+			process.stdin.resume();
+		});
 		await once(lines, 'close');
 
 		// create migration guru to guide us for a given target and repos
@@ -64,17 +76,21 @@ class TreeCommand extends Command {
 
 		// guide: interactive migration, text based, step-by-step
 		if (flags.format === 'guide') {
-			const ready = await new Confirm({
-				name: 'ready',
-				message: `Ready to update ${name}?`
-			}).run();
-			if (!ready) {
-				process.exit();
-			}
 			const impactedRepos = guru.getImpactedRepos();
 			let currentStepNumber = 0;
 			for await (const result of guru.getMigration()) {
 				currentStepNumber++;
+				// Output migration step number.
+				if (tty) {
+					let message = `Continue to step ${currentStepNumber} of the migration?`;
+					if (currentStepNumber === 1) {
+						message = `Ready to update ${name}?`;
+					}
+					await new Confirm({name: 'continue', message}).run();
+				} else {
+					this.log(chalk.bold(`Step ${currentStepNumber} of the ${name} migration:`));
+				}
+				// Output migration details.
 				const migrationLog = result.dependents.map(repo => {
 					const name = repo.name;
 					const dependenciesWhichRequiredUpgrade = repo.getDependencies().filter(dependency => {
@@ -83,12 +99,7 @@ class TreeCommand extends Command {
 					return `${chalk.green(name)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
 				}).join('\n');
 				this.log(migrationLog + '\n');
-				await new Confirm({
-					name: 'continue',
-					message: `Continue to step ${currentStepNumber + 1} of the migration?`
-				}).run();
 			}
-			this.log(chalk.green('\nAll done!\n'));
 		}
 
 		// dot: generate a graphviz `.dot` to visualise the migration
@@ -107,13 +118,16 @@ class TreeCommand extends Command {
 	}
 }
 
-TreeCommand.args = [
-	{ name: 'component' }
-];
+TreeCommand.args = [{
+	name: 'component'
+}, {
+	name: 'manifests',
+	char: 'm',
+	description: 'a file containing manifests (ebi)'
+}];
 
 TreeCommand.flags = {
-	format: flags.string({ char: 'f', options: ['dot', 'guide'], description: 'format to output tree in' }),
-	manifests: flags.string({ char: 'm', description: 'a file containing manifests (ebi)' }),
+	format: flags.string({ char: 'f', options: ['dot', 'guide'], description: 'format to output tree in' })
 };
 
 TreeCommand.description = `OMG
