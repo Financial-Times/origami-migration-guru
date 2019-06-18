@@ -1,6 +1,10 @@
 const path = require('path');
 const Repo = require('./repo');
 
+/**
+ * @param {*} repo - To validate is a Repo object.
+ * @throws {TypeError}
+ */
 function validateRepo(repo) {
 	if (!(repo instanceof Repo)) {
 		throw new TypeError('Was not given a target repo.');
@@ -21,6 +25,9 @@ class Repos {
 		this._repos = [];
 	}
 
+	/**
+	 * @return {Array<Repo>} - All repos.
+	 */
 	getAll() {
 		return this._repos;
 	}
@@ -28,6 +35,7 @@ class Repos {
 	/**
 	 * @param {String} name The name of the repo.
 	 * @return {Repo|null} - The found repo.
+	 * @throws {SingleRepoNotFoundError}
 	 */
 	findOne(name) {
 		// Find repos by name. E.g. "o-crossword"
@@ -44,6 +52,11 @@ class Repos {
 		return repos[0];
 	}
 
+	/**
+	 * @param {Repo} repo The repo to compare against a dependency.
+	 * @param {Dependency} dependency The dependency to compare the repo against.
+	 * @return {Boolean} - True if the dependency represents the repo.
+	 */
 	repoMatchesDependency(repo, dependency) {
 		validateRepo(repo);
 		return dependency.name === repo.getName(dependency.source);
@@ -98,13 +111,17 @@ class Repos {
 
 	/**
 	 * @param {Repo} repo The repo to get dependencies for.
-	 * @return {Array<String>} - All repos which are dependencies of the given repo.
+	 * @return {Array<Repo>} - All repos which are dependencies, direct or indirect, of the given repo.
 	 */
 	getDependencies(repo) {
 		validateRepo(repo);
 		return this._getDependenciesRecursive(repo);
 	}
 
+	/**
+	 * @param {Repo} repo The repo to get dependencies for.
+	 * @return {Array<Repo>} - Repos which are direct dependencies of the given repo.
+	 */
 	getDirectDependencies(repo) {
 		validateRepo(repo);
 		const dependencies = repo.getDependencies();
@@ -113,6 +130,9 @@ class Repos {
 		));
 	}
 
+	/**
+	 * @param {Object|Sring} result - The result from an [ebi](https://github.com/Financial-Times/ebi) search for manifest files.
+	 */
 	addFromEbi(result) {
 		result = JSON.parse(result);
 		let registry = path.parse(result.filepath).name;
