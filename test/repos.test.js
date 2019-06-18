@@ -131,6 +131,7 @@ describe('Repos', () => {
 			const actual = repos.findOne('a');
 			assertRepos([actual], ['a']);
 		});
+
 		it('returns a single found repo by id', () => {
 			repos = createRepos([
 				{
@@ -150,6 +151,7 @@ describe('Repos', () => {
 			const actualTwo = repos.findOne('other-org/a');
 			proclaim.equal(actualTwo.id, 'other-org/a');
 		});
+
 		it('Errors when two repos are found', () => {
 			repos = createRepos([
 				{
@@ -209,6 +211,48 @@ describe('Repos', () => {
 
 		it('Errors when no repos are given.', () => {
 			proclaim.throws(() => repos.getDependencies(undefined));
+		});
+	});
+
+	describe('getDirectDependents', () => {
+		beforeEach(() => {
+			repos = reposWithDependencies();
+		});
+
+		it('Does not return the repos which are indirect dependents of a given repo.', () => {
+			// Todo: Remove find one call so `getDirectDependents` test
+			// does not rely on `findOne` working.
+			const actual = repos.getDirectDependents(repos.findOne('c'));
+			assertRepos(actual, ['b']); // only b directly depends on c
+		});
+
+		it('Returns an empty array when there are no dependents of a given repo.', () => {
+			const actual = repos.getDirectDependents(repos.findOne('a'));
+			assertRepos(actual, []);
+		});
+
+		it('Errors when no repos are given.', () => {
+			proclaim.throws(() => repos.getDirectDependencies(undefined));
+		});
+	});
+
+	describe('Dependents', () => {
+		beforeEach(() => {
+			repos = reposWithDependencies();
+		});
+
+		it('Returns direct and indirect dependents of a given repo.', () => {
+			const actual = repos.getDependents(repos.findOne('c'));
+			assertRepos(actual, ['b', 'a']); // both indirectly depend on c
+		});
+
+		it('Returns an empty array when there are no dependents on a given repo.', () => {
+			const actual = repos.getDependents(repos.findOne('a'));
+			assertRepos(actual, []);
+		});
+
+		it('Errors when no repos are given.', () => {
+			proclaim.throws(() => repos.getDependents(undefined));
 		});
 	});
 
