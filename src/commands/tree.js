@@ -78,7 +78,7 @@ class TreeCommand extends Command {
 				const migrationLog = result.dependents.map(repo => {
 					const name = repo.name;
 					const dependenciesWhichRequiredUpgrade = repo.getDependencies().filter(dependency => {
-						return repos.repoMatchesDependency(guru.target, dependency) || impactedRepos.find(repo => repos.repoMatchesDependency(repo, dependency));
+						return Repos.repoMatchesDependency(guru.target, dependency) || impactedRepos.find(repo => Repos.repoMatchesDependency(repo, dependency));
 					}).map(d => `${d.source}:${d.name}`);
 					return `${chalk.green(name)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
 				}).join('\n');
