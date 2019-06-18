@@ -1,5 +1,49 @@
 const { Repos } = require('../src/repos');
+const Repo = require('../src/repo');
 const proclaim = require('proclaim');
+
+function createRepos(repoData) {
+	const repos = new Repos();
+	repoData.forEach(data => {
+		const ebi = {
+			filepath: 'bower.json',
+			repository: data.id ? data.id : `Financial-Times/${data.name}`,
+			fileContents: {
+				name: data.name,
+				dependencies: data.dependencies
+			}
+		};
+		repos.addFromEbi(JSON.stringify(ebi));
+	});
+	return repos;
+}
+
+const assertRepos = (actual, expectedNames) => {
+	proclaim.isInstanceOf(actual, Array);
+	actual.forEach(r => proclaim.isInstanceOf(r, Repo));
+	proclaim.deepEqual(actual.map(r => r.getName()).sort(), expectedNames.sort());
+};
+
+const reposWithDependencies = () => {
+	return createRepos([
+		{
+			name: 'a',
+			dependencies: {
+				b: '^1.0.0'
+			}
+		},
+		{
+			name: 'b',
+			dependencies: {
+				c: '^1.0.0'
+			}
+		},
+		{
+			name: 'c',
+			dependencies: {}
+		},
+	]);
+};
 
 describe('Repos', () => {
 	let repos;
@@ -63,4 +107,109 @@ describe('Repos', () => {
 			proclaim.throws(() => repos.addFromEbi(JSON.stringify(ebi)));
 		});
 	});
+
+	describe('getAll', () => {
+		it('returns all repos', () => {
+			repos = reposWithDependencies();
+			const actual = repos.getAll();
+			assertRepos(actual, ['a', 'b', 'c']);
+		});
+	});
+
+	describe('findOne', () => {
+		it('returns a single found repo by name', () => {
+			repos = createRepos([
+				{
+					name: 'a',
+					dependencies: {}
+				},
+				{
+					name: 'b',
+					dependencies: {}
+				}
+			]);
+			const actual = repos.findOne('a');
+			assertRepos([actual], ['a']);
+		});
+		it('returns a single found repo by id', () => {
+			repos = createRepos([
+				{
+					id: 'other-org/a',
+					name: 'a',
+					dependencies: {}
+				},
+				{
+					id: 'financial-times/a',
+					name: 'a',
+					dependencies: {}
+				}
+			]);
+			const actualOne = repos.findOne('financial-times/a');
+			proclaim.equal(actualOne.id, 'financial-times/a');
+
+			const actualTwo = repos.findOne('other-org/a');
+			proclaim.equal(actualTwo.id, 'other-org/a');
+		});
+		it('Errors when two repos are found', () => {
+			repos = createRepos([
+				{
+					id: 'other-org/a',
+					name: 'a',
+					dependencies: {}
+				},
+				{
+					id: 'financial-times/a',
+					name: 'a',
+					dependencies: {}
+				}
+			]);
+			proclaim.throws(() => repos.findOne('a'));
+		});
+		it('Errors when no repos are found', () => {
+			proclaim.throws(() => repos.findOne('x'));
+		});
+	});
+
+	describe('getDirectDependencies', () => {
+		beforeEach(() => {
+			repos = reposWithDependencies();
+		});
+
+		it('Does not return the repos which are indirect dependencies of a given repo.', () => {
+			// Todo: Remove find one call so `getDirectDependencies` test
+			// does not rely on `findOne` working.
+			const actual = repos.getDirectDependencies(repos.findOne('a'));
+			assertRepos(actual, ['b']); // b is a direct dependency
+		});
+
+		it('Returns an empty array when there are no dependencies of a given repo.', () => {
+			const actual = repos.getDirectDependencies(repos.findOne('c'));
+			assertRepos(actual, []);
+		});
+
+		it('Errors when no repos are given.', () => {
+			proclaim.throws(() => repos.getDirectDependencies(undefined));
+		});
+	});
+
+	describe('getDependencies', () => {
+		beforeEach(() => {
+			repos = reposWithDependencies();
+		});
+
+		it('Returns direct and indirect dependencies of a given repo.', () => {
+			const actual = repos.getDependencies(repos.findOne('a'));
+			assertRepos(actual, ['b', 'c']);
+		});
+
+		it('Returns an empty array when there are no dependencies of a given repo.', () => {
+			const actual = repos.getDependencies(repos.findOne('c'));
+			assertRepos(actual, []);
+		});
+
+		it('Errors when no repos are given.', () => {
+			proclaim.throws(() => repos.getDependencies(undefined));
+		});
+	});
+
 });

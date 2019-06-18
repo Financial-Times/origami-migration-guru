@@ -1,6 +1,12 @@
 const path = require('path');
 const Repo = require('./repo');
 
+function validateRepo(repo) {
+	if (!(repo instanceof Repo)) {
+		throw new TypeError('Was not given a target repo.');
+	}
+}
+
 class SingleRepoNotFoundError extends Error {
 	constructor(message, query, foundRepos) {
 		super(message);
@@ -39,6 +45,7 @@ class Repos {
 	}
 
 	repoMatchesDependency(repo, dependency) {
+		validateRepo(repo);
 		return dependency.name === repo.getName(dependency.source);
 	}
 
@@ -47,6 +54,7 @@ class Repos {
 	 * @return {Array<Repo>} - All repos which are direct dependents.
 	 */
 	getDirectDependents(repo) {
+		validateRepo(repo);
 		return this._repos.filter(current => {
 			const dependencies = current.getDependencies();
 			return dependencies.some(dependency => {
@@ -60,6 +68,7 @@ class Repos {
 	 * @return {Array<Repo>} - All repos which are dependents, direct or indirect.
 	 */
 	getDependents(repo) {
+		validateRepo(repo);
 		const dependents = new Map();
 		this.getDirectDependents(repo).forEach(dependent => {
 			dependents.set(dependent.name, dependent);
@@ -92,10 +101,12 @@ class Repos {
 	 * @return {Array<String>} - All repos which are dependencies of the given repo.
 	 */
 	getDependencies(repo) {
+		validateRepo(repo);
 		return this._getDependenciesRecursive(repo);
 	}
 
 	getDirectDependencies(repo) {
+		validateRepo(repo);
 		const dependencies = repo.getDependencies();
 		return this._repos.filter(repo => dependencies.find(
 			dependency => this.repoMatchesDependency(repo, dependency)
