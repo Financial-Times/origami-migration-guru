@@ -20,8 +20,8 @@ const expectRepos = (reposToMigrate, expectedNames, count) => {
 	const extra = reposToMigrate.filter(repo => !expectedNames.includes(repo.name));
 	const extraNames = extra.map(repo => repo.name);
 	const missedNames = expectedNames.filter(name => !reposToMigrate.find(repo => repo.name === name));
-	proclaim.equal(extraNames.length, 0, `Extra repos of migration ${count + 1}: ${extraNames}. Expected: ${expectedNames}`);
-	proclaim.equal(missedNames.length, 0, `Missed repos of migration ${count + 1}: ${missedNames}. Expected: ${expectedNames}`);
+	proclaim.equal(extraNames.length, 0, `Extra repos of migration ${count}: ${extraNames}. Expected: ${expectedNames}`);
+	proclaim.equal(missedNames.length, 0, `Missed repos of migration ${count}: ${missedNames}. Expected: ${expectedNames}`);
 };
 
 const getGuru = (target, repos) => {
@@ -31,13 +31,14 @@ const getGuru = (target, repos) => {
 const assertMigrations = async (guru, expectedMigrations) => {
 	let count = 0;
 	for await (const result of guru.getMigration()) {
-		const expected = expectedMigrations[count];
+		count++;
+		const expected = expectedMigrations[count - 1];
 		if (expected) {
 			expectRepos(result.dependents, expected, count);
+			proclaim.equal(result.step, count);
 		} else {
-			proclaim.ok(false, `Expected no more results after migration ${count + 1}.`);
+			proclaim.ok(false, `Expected no more results after migration ${count}.`);
 		}
-		count++;
 	}
 	if (count === 0 && expectedMigrations.length > 0) {
 		proclaim.ok(false, 'No migration steps returned.');

@@ -56,7 +56,10 @@ class Guru {
 		const completed = new Set();
 		// Repos which are not completely migrated yet.
 		let incomplete = new Set([this.target]);
+		// The current migration step.
+		let step = 0;
 		while (incomplete.size > 0) {
+			step++;
 			const retry = new Set();
 			const migration = new Set();
 			// 1. Find next migration set for incompleted repos.
@@ -83,7 +86,7 @@ class Guru {
 			retry.forEach(repo => incomplete.add(repo));
 
 			if (migration.size > 0) {
-				yield { dependents: [...migration], done: incomplete.size === 0};
+				yield { dependents: [...migration], step, done: incomplete.size === 0};
 			}
 		}
 	}
