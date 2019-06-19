@@ -1,32 +1,18 @@
 const { Command } = require('@oclif/command');
 const {Repos} = require('../repos');
 const GuruFactory = require('../guru-factory');
-const { Confirm, Select } = require('enquirer');
+const { Confirm } = require('enquirer');
 const chalk = require('chalk');
 
 const tty = process.stdin.isTTY;
 
 class GuideCommand extends Command {
 
-	async confirmTargetRepoName(query, reposFound) {
-		try {
-			const choice = await new Select({
-				name: 'repo',
-				message: `${reposFound.length} repos for "${query}" were found, pick one to continue`,
-				choices: reposFound.map(r => r.id)
-			}).run();
-
-			return choice;
-		} catch (error) {
-			process.exit();
-		}
-	}
-
 	async run() {
 		const { args } = this.parse(GuideCommand);
 
 		// Create migration guru.
-		const guru = GuruFactory.createFromInput(args.component, args.manifests);
+		const guru = await GuruFactory.createFromInput(args.component, args.manifests, this.log);
 
 		// Get all repos which depend in some way on the target.
 		const impactedRepos = guru.getImpactedRepos();

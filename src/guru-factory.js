@@ -4,14 +4,15 @@ const Ebi = require('./ebi');
 const chalk = require('chalk');
 const path = require('path');
 const fs = require('fs');
+const { Select } = require('enquirer');
 
 const tty = process.stdin.isTTY;
 
 class GuruFactory {
 
-	static async createFromInput(targetName, manifestSource) {
+	static async createFromInput(targetName, manifestSource, log) {
 		// Set manifest source.
-		if (typeof manifestSource === 'string') {
+		if (tty && typeof manifestSource === 'string') {
 			manifestSource = path.resolve(__dirname, manifestSource);
 			manifestSource = fs.createReadStream(manifestSource);
 		} else {
@@ -26,18 +27,30 @@ class GuruFactory {
 			return new Guru(targetName, repos);
 		} catch (error) {
 			if (error instanceof SingleRepoNotFoundError) {
-				// Error if no repos are found.
+				// 1. Error if no repos are found.
 				if (!error.repos || error.repos.length === 0) {
-					this.log(chalk.red(`Could not find a repo by name "${error.query}" amoung the ${repos.getAll().length} repos given.`));
+					log(chalk.red(`Could not find a repo by name "${error.query}" amoung the ${repos.getAll().length} repos given.`));
 					process.exit();
 				}
-				// If multiple repos found for the name, prompt for a choice.
+				// 2. If multiple repos found.
+				// 2b. Error if no tty input.
 				if (!tty) {
-					this.log(chalk.red(`${error.repos.length} repos for "${error.query}" were found, pick one to continue: ${error.repos.map(r => r.id)}`));
+					log(chalk.red(`${error.repos.length} repos for "${error.query}" were found, run again with one of: ${error.repos.map(r => r.id)}`));
 					process.exit();
 				}
-				const choice = await this.confirmTargetRepoName(error.query, error.repos);
-				return new Guru(choice, repos);
+				// 2c. Otherwise confirm choice.
+				let choice;
+				try {
+					choice = await new Select({
+						name: 'repo',
+						message: `${error.repos.length} repos for "${error.query}" were found, pick one to continue`,
+						choices: error.repos.map(r => r.id)
+					}).run();
+
+					return new Guru(choice, repos);
+				} catch (error) {
+					process.exit();
+				}
 			}
 		}
 	}
