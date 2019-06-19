@@ -1,10 +1,11 @@
-const Guru = require('./guru');
-const { SingleRepoNotFoundError } = require('./repos');
-const Ebi = require('./ebi');
+const { once } = require('events');
+const readline = require('readline');
 const chalk = require('chalk');
 const path = require('path');
 const fs = require('fs');
 const { Select } = require('enquirer');
+const Guru = require('./guru');
+const { ReposRepository, SingleRepoNotFoundError } = require('./repos-repository');
 
 const tty = process.stdin.isTTY;
 
@@ -20,7 +21,18 @@ class GuruFactory {
 		}
 
 		// Create repos.
-		const repos = await Ebi.resultsToRepos(manifestSource);
+		const repos = new ReposRepository();
+		const lines = readline.createInterface({
+			input: manifestSource
+		});
+		lines.on('line', input => {
+			try {
+				repos.addFromEbi(input);
+			} catch (error) {
+				log(`Cound not parse line. ${error.message}: ${input}`);
+			}
+		});
+		await once(lines, 'close');
 
 		// Create guru.
 		try {

@@ -31,7 +31,7 @@ class SingleRepoNotFoundError extends Error {
 	}
 }
 
-class Repos {
+class ReposRepository {
 	constructor() {
 		this._repos = [];
 	}
@@ -83,7 +83,7 @@ class Repos {
 		return this._repos.filter(current => {
 			const dependencies = current.getDependencies();
 			return dependencies.some(dependency => {
-				return Repos.repoMatchesDependency(repo, dependency);
+				return ReposRepository.repoMatchesDependency(repo, dependency);
 			});
 		});
 	}
@@ -138,7 +138,7 @@ class Repos {
 		validateRepo(repo);
 		const dependencies = repo.getDependencies();
 		return this._repos.filter(repo => dependencies.find(
-			dependency => Repos.repoMatchesDependency(repo, dependency)
+			dependency => ReposRepository.repoMatchesDependency(repo, dependency)
 		));
 	}
 
@@ -169,4 +169,4 @@ class Repos {
 	}
 }
 
-module.exports = { Repos, SingleRepoNotFoundError};
+module.exports = { ReposRepository, SingleRepoNotFoundError};

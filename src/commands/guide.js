@@ -1,5 +1,5 @@
 const { Command } = require('@oclif/command');
-const {Repos} = require('../repos');
+const {ReposRepository} = require('../repos-repository');
 const GuruFactory = require('../guru-factory');
 const { Confirm } = require('enquirer');
 const chalk = require('chalk');
@@ -32,7 +32,7 @@ class GuideCommand extends Command {
 			const migrationLog = result.dependents.map(repo => {
 				const name = repo.name;
 				const dependenciesWhichRequiredUpgrade = repo.getDependencies().filter(dependency => {
-					return Repos.repoMatchesDependency(guru.target, dependency) || impactedRepos.find(repo => Repos.repoMatchesDependency(repo, dependency));
+					return ReposRepository.repoMatchesDependency(guru.target, dependency) || impactedRepos.find(repo => ReposRepository.repoMatchesDependency(repo, dependency));
 				}).map(d => `${d.source}:${d.name}`);
 				return `${chalk.green(name)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
 			}).join('\n');

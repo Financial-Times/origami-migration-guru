@@ -1,6 +1,6 @@
 /* eslint-disable no-loop-func */
 const Guru = require('../src/guru');
-const { Repos } = require('../src/repos');
+const { ReposRepository } = require('../src/repos-repository');
 const proclaim = require('proclaim');
 
 const generateEbiResult = (component, dependencies) => {
@@ -8,7 +8,7 @@ const generateEbiResult = (component, dependencies) => {
 };
 
 const getRepos = repoNames => {
-	const repos = new Repos();
+	const repos = new ReposRepository();
 	for (const [name, dependencies] of Object.entries(repoNames)) {
 		const result = generateEbiResult(name, dependencies);
 		repos.addFromEbi(result);
