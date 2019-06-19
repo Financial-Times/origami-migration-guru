@@ -15,8 +15,8 @@ class StatsCommand extends Command {
 		// Provide a general overview of numbers.
 		const totalCount = guru.getImpactedRepos().length;
 		this.log(chalk.green(`Found ${guru.repos.getAll().length} repos to consider.`));
-		this.log(chalk.green(`Of these ${guru.getDirectlyImpactedRepos().length} rely on ${guru.target.getName()} directly.`));
-		this.log(chalk.green(`${totalCount} rely on ${guru.target.getName()} overall${totalCount > 0 ? ':' : '.'}`));
+		this.log(chalk.green(`Of these ${guru.getDirectlyImpactedRepos().length} rely on ${guru.targets.map(t => t.getName())} directly.`));
+		this.log(chalk.green(`${totalCount} rely on ${guru.targets.map(t => t.getName())} overall${totalCount > 0 ? ':' : '.'}`));
 		this.log(guru.getImpactedRepos().map(d => d.name).join(', '));
 		this.exit();
 	}

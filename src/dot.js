@@ -4,7 +4,7 @@ class Dot {
 	}
 
 	async getDotMigration() {
-		const target = this.guru.target;
+		const targets = this.guru.targets;
 		const repos = this.guru.repos;
 		let migrationStepsContent = '';
 		let num = 0;
@@ -15,7 +15,7 @@ class Dot {
 			// Put results in a cluster.
 			migrationStepsContent += `\n\tsubgraph cluster_${num} {\n\t\tlabel = "step #${num}";\n\t\t${names.map(name => `"${name}";`).join(' ')}\n\t}`;
 			// Connect results to previous cluster.
-			const previousDependents = previousResult ? previousResult.dependents : [target];
+			const previousDependents = previousResult ? previousResult.dependents : targets;
 			result.dependents.forEach(current => {
 				const directDependencies = repos.getDirectDependencies(current);
 				previousDependents.forEach(previous => {

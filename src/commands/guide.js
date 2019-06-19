@@ -22,17 +22,18 @@ class GuideCommand extends Command {
 			// Output migration step number.
 			if (tty) {
 				const message = result.step === 1 ?
-					`Ready to update ${guru.target.getName()}?` :
+					`Ready to update ${guru.targets.map(t => t.getName())}?` :
 					`Continue to step ${result.step} of the migration?`;
 				await new Confirm({name: 'continue', message}).run();
 			} else {
-				this.log(chalk.bold(`Step ${result.step} of the ${guru.target.getName()} migration:`));
+				this.log(chalk.bold(`Step ${result.step} of the migration:`));
 			}
 			// Output migration details.
 			const migrationLog = result.dependents.map(repo => {
 				const name = repo.name;
 				const dependenciesWhichRequiredUpgrade = repo.getDependencies().filter(dependency => {
-					return ReposRepository.repoMatchesDependency(guru.target, dependency) || impactedRepos.find(repo => ReposRepository.repoMatchesDependency(repo, dependency));
+					const targetMatches = guru.targets.find(target => ReposRepository.repoMatchesDependency(target, dependency));
+					return targetMatches || impactedRepos.find(impacted => ReposRepository.repoMatchesDependency(impacted, dependency));
 				}).map(d => `${d.source}:${d.name}`);
 				return `${chalk.green(name)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
 			}).join('\n');

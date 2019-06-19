@@ -1,14 +1,18 @@
 class Guru {
 	/**
-	 * @param {String} targetName The name of the repo which needs a migration guide.
+	 * @param {Array<String>} targetNames The name of the repos which need migration.
 	 * @param {ReposRepository} repos A repos instance with details on each repo to evaluate.
 	 * @throws {SingleRepoNotFoundError} when a repo for the target name cannot be found
 	 */
-	constructor(targetName, repos) {
+	constructor(targetNames, repos) {
 		this.repos = repos;
-		this.target = repos.findOne(targetName);
-		this._targetDependents = repos.getDependents(this.target);
-		this._directTargetDependents = repos.getDirectDependents(this.target);
+		this.targets = targetNames.map(name => repos.findOne(name));
+		this._targetDependents = this.targets.reduce((p, t) => {
+			return p.concat(repos.getDependents(t));
+		}, []);
+		this._directTargetDependents = this.targets.reduce((p, t) => {
+			return p.concat(repos.getDirectDependents(t));
+		}, []);
 	}
 
 	/**
@@ -55,7 +59,7 @@ class Guru {
 		// Repos which have been migrated fully.
 		const completed = new Set();
 		// Repos which are not completely migrated yet.
-		let incomplete = new Set([this.target]);
+		let incomplete = new Set(this.targets);
 		// The current migration step.
 		let step = 0;
 		while (incomplete.size > 0) {

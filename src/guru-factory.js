@@ -11,7 +11,7 @@ const tty = process.stdin.isTTY;
 
 class GuruFactory {
 
-	static async createFromInput(targetName, manifestSource, log) {
+	static async createFromInput(targetNames, manifestSource, log) {
 		// Set manifest source.
 		if (tty && typeof manifestSource === 'string') {
 			manifestSource = path.resolve(__dirname, manifestSource);
@@ -36,7 +36,7 @@ class GuruFactory {
 
 		// Create guru.
 		try {
-			return new Guru(targetName, repos);
+			return new Guru(targetNames.split(','), repos);
 		} catch (error) {
 			if (error instanceof SingleRepoNotFoundError) {
 				// 1. Error if no repos are found.

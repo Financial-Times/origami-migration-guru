@@ -2,6 +2,7 @@
 const Guru = require('../src/guru');
 const { ReposRepository } = require('../src/repos-repository');
 const proclaim = require('proclaim');
+const { difference, intersection } = require('lodash');
 
 const generateEbiResult = (component, dependencies) => {
 	return `{"filepath":"bower.json","repository":"Financial-Times/${component}","fileContents":"{\\"name\\":\\"${component}\\",\\"dependencies\\":{${dependencies.map(dependency => `\\"${dependency}\\":\\"^4.7.9\\"`)}}}"}`;
@@ -24,8 +25,8 @@ const expectRepos = (reposToMigrate, expectedNames, count) => {
 	proclaim.equal(missedNames.length, 0, `Missed repos of migration ${count}: ${missedNames}. Expected: ${expectedNames}`);
 };
 
-const getGuru = (target, repos) => {
-	return new Guru(target, getRepos(repos));
+const getGuru = (targets, repos) => {
+	return new Guru(targets, getRepos(repos));
 };
 
 const assertMigrations = async (guru, expectedMigrations) => {
@@ -46,10 +47,10 @@ const assertMigrations = async (guru, expectedMigrations) => {
 };
 
 describe('Guru Migration', () => {
-	const target = 'a';
 
 	const tests = [
 		{
+			targets: ['a'],
 			description: 'a single dependency',
 			visual: `
 				+---+
@@ -71,6 +72,30 @@ describe('Guru Migration', () => {
 			]
 		},
 		{
+			targets: ['a', 'b'],
+			description: 'a single dependency with both as targets',
+			visual: `
+				+---+
+				| b |
+				+---+
+				|
+				|
+				v
+				+---+
+				| a |
+				+---+
+			`,
+			repos: {
+				a: [],
+				b: ['a'] // b depends on a
+			},
+			expectedMigrations: [
+				['b']
+			],
+			expectedImpactedCount: 1 // as one target depends on the other target
+		},
+		{
+			targets: ['a'],
 			description: 'a single direct and indirect dependency',
 			visual: `
 				+---+
@@ -100,6 +125,75 @@ describe('Guru Migration', () => {
 			]
 		},
 		{
+			targets: ['a', 'x'],
+			description: 'a single direct and indirect dependency on two seperate targets',
+			visual: `
+				+---+	+---+
+				| c |	| z |
+				+---+	+---+
+				|       |
+				|       |
+				v       v
+				+---+	+---+
+				| b |	| y |
+				+---+	+---+
+				|       |
+				|       |
+				v       v
+				+---+	+---+
+				| a |	| x |
+				+---+	+---+
+			`,
+			repos: {
+				a: [],
+				b: ['a'], // b depends on a
+				c: ['b'], // c depends on b
+				x: [],
+				y: ['x'],
+				z: ['y']
+			},
+			expectedMigrations: [
+				['b', 'y'],
+				['c', 'z']
+			]
+		},
+		{
+			targets: ['a', 'x'],
+			description: 'direct and indirect dependencies on two connected targets',
+			visual: `
+				+---+	  +---+
+				| c | <-- | z |
+				+---+	  +---+
+				|         |
+				|         |
+				v         v
+				+---+	  +---+
+				| b |	  | y |
+				+---+	  +---+
+				|         |
+				|         |
+				v         v
+				+---+	  +---+
+				| a |	  | x |
+				+---+	  +---+
+			`,
+			repos: {
+				a: [],
+				b: ['a'], // b depends on a
+				c: ['b'], // c depends on b
+				x: [],
+				y: ['x'],
+				z: ['y', 'c']
+			},
+			expectedMigrations: [
+				['b', 'y'],
+				['c'],
+				['z']
+			],
+			expectedImpactedCount: 5 // as one target depends on the other target. todo: is this what we want?
+		},
+		{
+			targets: ['a'],
 			description: 'nested direct and indirect interdependencies',
 			visual: `
   			        +---+     +---+
@@ -167,6 +261,7 @@ describe('Guru Migration', () => {
 			]
 		},
 		{
+			targets: ['a'],
 			description: 'two dependents "c" and "d" share a direct and indirect dependency of the target, but "d" also depends on the other "c"',
 			visual: `
 			   +---+     +---+
@@ -199,16 +294,16 @@ describe('Guru Migration', () => {
 		},
 	];
 
-	for (const { visual, description, repos, expectedMigrations } of tests) {
+	for (const { targets, visual, description, repos, expectedMigrations, expectedImpactedCount} of tests) {
 		describe(`Of a dependency tree with ${description}:\n${visual}`, () => {
-			const guru = getGuru(target, repos);
+			const guru = getGuru(targets, repos);
 			it('Gives the correct number of direct dependents.', async () => {
 				const dependencyLists = Object.values(repos);
-				const directDependencyLists = dependencyLists.filter(list => list.includes(target));
+				const directDependencyLists = dependencyLists.filter(list => intersection(list, targets).length);
 				proclaim.equal(guru.getDirectlyImpactedRepos().length, directDependencyLists.length);
 			});
 			it('Gives the correct number of total dependents.', async () => {
-				proclaim.equal(guru.getImpactedRepos().length, Object.keys(repos).length - 1);
+				proclaim.equal(guru.getImpactedRepos().length, expectedImpactedCount || difference(Object.keys(repos), targets).length);
 			});
 			it('Generates the current migration guide.', async () => {
 				await assertMigrations(guru, expectedMigrations);
