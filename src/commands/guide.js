@@ -1,10 +1,8 @@
 const { Command } = require('@oclif/command');
-const {Repos, SingleRepoNotFoundError} = require('../repos');
-const Guru = require('../guru');
-const Ebi = require('../ebi');
+const {Repos} = require('../repos');
+const GuruFactory = require('../guru-factory');
 const { Confirm, Select } = require('enquirer');
 const chalk = require('chalk');
-const path = require('path');
 
 const tty = process.stdin.isTTY;
 
@@ -24,38 +22,11 @@ class GuideCommand extends Command {
 		}
 	}
 
-	async getGuru(name, repos) {
-		try {
-			// Get migration guru for repo name and repos.
-			return new Guru(name, repos);
-		} catch (error) {
-			if (error instanceof SingleRepoNotFoundError) {
-				// Error if no repos are found.
-				if (!error.repos || error.repos.length === 0) {
-					this.log(chalk.red(`Could not find a repo by name "${error.query}" amoung the ${repos.getAll().length} repos given.`));
-					process.exit();
-				}
-				// If multiple repos found for the name, prompt for a choice.
-				if (!tty) {
-					this.log(chalk.red(`${error.repos.length} repos for "${error.query}" were found, pick one to continue: ${error.repos.map(r => r.id)}`));
-					process.exit();
-				}
-				const choice = await this.confirmTargetRepoName(error.query, error.repos);
-				return new Guru(choice, repos);
-			}
-		}
-	}
-
 	async run() {
 		const { args } = this.parse(GuideCommand);
 
-		// Create repos.
-		const foundRepoManifests = args.manifests ? path.resolve(__dirname, args.manifests) : '';
-		const repos = await Ebi.resultsToRepos(foundRepoManifests);
-
 		// Create migration guru.
-		const name = args.component;
-		const guru = await this.getGuru(name, repos);
+		const guru = GuruFactory.createFromInput(args.component, args.manifests);
 
 		// Get all repos which depend in some way on the target.
 		const impactedRepos = guru.getImpactedRepos();
@@ -65,11 +36,11 @@ class GuideCommand extends Command {
 			// Output migration step number.
 			if (tty) {
 				const message = result.step === 1 ?
-					`Ready to update ${name}?` :
+					`Ready to update ${guru.target.getName()}?` :
 					`Continue to step ${result.step} of the migration?`;
 				await new Confirm({name: 'continue', message}).run();
 			} else {
-				this.log(chalk.bold(`Step ${result.step} of the ${name} migration:`));
+				this.log(chalk.bold(`Step ${result.step} of the ${guru.target.getName()} migration:`));
 			}
 			// Output migration details.
 			const migrationLog = result.dependents.map(repo => {

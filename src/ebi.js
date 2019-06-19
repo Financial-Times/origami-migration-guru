@@ -1,14 +1,13 @@
 const { once } = require('events');
-const fs = require('fs');
 const readline = require('readline');
 const { Repos } = require('./repos');
 
 class Ebi {
-	static async resultsToRepos(manifestFile) {
+	static async resultsToRepos(manifestSource) {
 		const repos = new Repos();
 		// Get manifests from given file.
 		const lines = readline.createInterface({
-			input: manifestFile ? fs.createReadStream(manifestFile) : process.stdin
+			input: manifestSource
 		});
 		lines.on('line', input => {
 			try {
