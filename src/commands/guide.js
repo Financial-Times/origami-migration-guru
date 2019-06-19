@@ -38,6 +38,7 @@ class GuideCommand extends Command {
 			}).join('\n');
 			this.log(migrationLog + '\n');
 		}
+		this.exit();
 	}
 }
 

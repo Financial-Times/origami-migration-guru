@@ -5,7 +5,7 @@ origami-migration-guru
 
 Origami Migration Guru helps plan the migration for new major released of components or other projects. For a given project, it analyses a given set of repository manifests looking for dependents. The dependents may be shown as a graph or step by step in an interactive command line interface.
 
-### interactive migration guide
+### Step By Step Migration Guide
 
 Find dependents and the order to migrate them, step by step.
 
@@ -19,7 +19,7 @@ Or:
 cat manifests/ebi.txt | bin/run guide o-table
 ```
 
-### graph
+### Graphed Migration Guide
 
 Create a migration guide in [DOT format](https://en.wikipedia.org/wiki/DOT_(graph_description_language)).
 
@@ -29,7 +29,7 @@ cat manifests/ebi.txt | bin/run dot o-table
 
 This can be turned into a graph using tools such as `dot`.
 ```bash
-cat manifests/ebi.txt | bin/run dot o-table | dot -Tsvg > ~/Desktop/component.svg
+cat manifests/ebi.txt | bin/run dot o-table | dot -Tsvg > ~/Desktop/guide.svg
 ```
 
 ### Overview

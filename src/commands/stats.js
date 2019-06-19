@@ -12,12 +12,13 @@ class StatsCommand extends Command {
 		// Create migration guru.
 		const guru = await GuruFactory.createFromInput(args.component, args.manifests, this.log);
 
-		// n/a: when no format is selected provide a general overview of numbers
+		// Provide a general overview of numbers.
 		const totalCount = guru.getImpactedRepos().length;
 		this.log(chalk.green(`Found ${guru.repos.getAll().length} repos to consider.`));
 		this.log(chalk.green(`Of these ${guru.getDirectlyImpactedRepos().length} rely on ${guru.target.getName()} directly.`));
 		this.log(chalk.green(`${totalCount} rely on ${guru.target.getName()} overall${totalCount > 0 ? ':' : '.'}`));
 		this.log(guru.getImpactedRepos().map(d => d.name).join(', '));
+		this.exit();
 	}
 }
 
@@ -32,9 +33,9 @@ StatsCommand.args = [{
 }];
 
 StatsCommand.description = `
-Generate a DOT file to show the migration path
-for a component, which accounts for all the
-repository manifests given.
+Find the dependents of a component, which
+accounts for all the repository manifests
+given.
 `;
 
 module.exports = StatsCommand;

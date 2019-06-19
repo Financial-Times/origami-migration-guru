@@ -15,6 +15,7 @@ class DotCommand extends Command {
 		// Output dot file.
 		const dot = new Dot(guru);
 		this.log(await dot.getDotMigration());
+		this.exit();
 	}
 }
 

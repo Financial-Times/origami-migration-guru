@@ -16,9 +16,6 @@ class Ebi {
 				this.warn(`Cound not parse line. ${error.message}: ${input}`);
 			}
 		});
-		lines.on('close', () => {
-			process.stdin.resume();
-		});
 		await once(lines, 'close');
 		return repos;
 	}
