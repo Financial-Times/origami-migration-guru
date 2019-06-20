@@ -190,7 +190,7 @@ describe('Guru Migration', () => {
 				['c'],
 				['z']
 			],
-			expectedImpactedCount: 5 // as one target depends on the other target. todo: is this what we want?
+			expectedImpactedCount: 5 // as one target depends on the other target.
 		},
 		{
 			targets: ['a'],
