@@ -24,7 +24,10 @@ class GuideCommand extends Command {
 				const message = result.step === 1 ?
 					`Ready to update ${guru.targets.map(t => t.getName())}?` :
 					`Continue to step ${result.step} of the migration?`;
-				await new Confirm({name: 'continue', message}).run();
+				const confirmaiton = await new Confirm({ name: 'continue', message }).run();
+				if (!confirmaiton) {
+					this.exit();
+				}
 			} else {
 				this.log(chalk.bold(`Step ${result.step} of the migration:`));
 			}
