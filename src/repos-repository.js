@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 const path = require('path');
 const Repo = require('./repo');
 const Dependency = require('./dependency');
@@ -23,11 +24,21 @@ function validateDependency(dependency) {
 }
 
 class SingleRepoNotFoundError extends Error {
-	constructor(message, query, foundRepos) {
+	constructor(message, query, foundRepos, registry = null) {
 		super(message);
 		this.name = 'SingleRepoNotFoundError';
 		this.query = query;
 		this.repos = foundRepos;
+		this.registry = registry;
+	}
+}
+
+class ManifestConflictError extends Error {
+	constructor(message, existingRepoId, newRepoId) {
+		super(message);
+		this.name = 'ManifestConflictError';
+		this.existingRepoId = existingRepoId;
+		this.newRepoId = newRepoId;
 	}
 }
 
@@ -58,6 +69,16 @@ class ReposRepository {
 		// Found more or less than one repo.
 		if (repos.length !== 1) {
 			throw new SingleRepoNotFoundError(`Found ${repos.length} repos which match "${name}".`, name, repos);
+		}
+		// Success.
+		return repos[0];
+	}
+
+	findOneByRegistryName(name, registry) {
+		const repos = this._repos.filter(repo => repo.getName(registry) === name);
+		// Found more or less than one repo.
+		if (repos.length !== 1) {
+			throw new SingleRepoNotFoundError(`Found ${repos.length} repos which match "${name}" for registry "${registry}".`, name, repos, registry);
 		}
 		// Success.
 		return repos[0];
@@ -146,7 +167,7 @@ class ReposRepository {
 	 * @param {Object|Sring} result - The result from an [ebi](https://github.com/Financial-Times/ebi) search for manifest files.
 	 */
 	addFromEbi(result) {
-		result = JSON.parse(result);
+		result = typeof result === 'string' ? JSON.parse(result) : result;
 		let registry = path.parse(result.filepath).name;
 		registry = registry === 'package' ? 'npm' : registry;
 		const manifest = result.fileContents;
@@ -159,13 +180,61 @@ class ReposRepository {
 		if (!manifest) {
 			return;
 		}
+		//
+		try {
+			const parsed = JSON.parse(manifest);
+			// if (parsed.name === 'n-ui-foundations') {
+			const existingRepo = this.findOneByRegistryName(parsed.name, registry);
+			const existing = existingRepo.manifestUrls.get(registry);
+
+			const extractName = name => {
+				const parts = name.split('/');
+				return parts.pop();
+			};
+
+			// if (existingRepo.id !== result.repository) {
+			// 	// Check package.json repository url and bower homepage
+			// 	let parsedWin = (parsed.repository && parsed.repository.url && parsed.repository.url.includes(result.repository)) || (parsed.homepage && parsed.homepage.includes(result.repository));
+			// 	let existingWin = existing && existing.includes(existingRepo.id);
+			// 	// If no clear winners check the name matches the repo name.
+			// 	if (!parsedWin && !existingWin) {
+			// 		const parsedName = extractName(parsed.name);
+			// 		parsedWin = result.repository.includes(parsedName);
+			// 		existingWin = existingRepo.name.includes(parsedName);
+			// 	}
+			// 	// If both winners, check the manifest name matches the repo name exactly.
+			// 	if (parsedWin && existingWin) {
+			// 		const parsedName = extractName(parsed.name);
+			// 		parsedWin = extractName(result.repository) === extractName(parsedName);
+			// 		existingWin = extractName(existingRepo.name) === extractName(parsedName);
+			// 	}
+
+			// 	if (existingWin && !parsedWin) {
+			// 		console.warn(`success: for ${parsed.name}, chose ${existingRepo.id} over ${result.repository} (${registry})`);
+			// 	}
+			// 	if (!existingWin && parsedWin) {
+			// 		console.warn(`success: for ${parsed.name}, chose ${result.repository} over ${existingRepo.id} (${registry})`);
+			// 	}
+			// 	if ((!existingWin && !parsedWin) || (existingWin && parsedWin)) {
+			// 		console.warn(`fail-${existingWin && parsedWin ? 'both' : 'neither'}: for ${parsed.name}, ${existingRepo.id} or ${result.repository} (${registry})?`);
+			// 	}
+			// 	// Todo: how to handle success?
+			// 	// a. Remove. But then won't be included in migration.
+			// 	// b. Reassign manifestNames to random string (assumes not published to registry).
+			// 	// Todo: how to handle fail?
+			// 	// a. Ask user to clarify if tty or error otherwise.
+			// 	// b. a, but only if another repo has a dependnecy on one of the conflicting. If not just assign a random string to manifestNames defensively.
+			// 	// c. Actually check the registry.
+			// }
+			// }
+		} catch (error) {}
 		// Success. Add result.
 		let repo = this._repos.find(repo => repo.id === result.repository);
 		if (!repo) {
 			repo = new Repo(result.repository);
 			this._repos.push(repo);
 		}
-		repo.addManifest(registry, result.fileContents);
+		repo.addManifest(registry, manifest);
 	}
 }
 

@@ -30,11 +30,10 @@ class GuideCommand extends Command {
 			}
 			// Output migration details.
 			const migrationLog = result.dependents.map(repo => {
-				const name = repo.name;
 				const dependenciesWhichRequiredUpgrade = repo.getDependencies().filter(dependency => {
 					return ReposRepository.repoMatchesDependency(guru.target, dependency) || impactedRepos.find(repo => ReposRepository.repoMatchesDependency(repo, dependency));
 				}).map(d => `${d.source}:${d.name}`);
-				return `${chalk.green(name)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
+				return `${chalk.green(repo.id)} ${chalk.italic(`(${dependenciesWhichRequiredUpgrade.join(', ')})`)}`;
 			}).join('\n');
 			this.log(migrationLog + '\n');
 		}

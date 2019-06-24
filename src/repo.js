@@ -18,6 +18,7 @@ class Repo {
 		this.id = repoName;
 		[this.org, this.name] = repoName.split('/');
 		this.manifestNames = new Map();
+		this.manifestUrls = new Map();
 		this.dependencies = new Map([
 			['npm', new Set()],
 			['bower', new Set()]
@@ -66,6 +67,12 @@ class Repo {
 		manifest = typeof manifest === 'string' ? JSON.parse(manifest) : manifest;
 		if (manifest.name) {
 			this.manifestNames.set(registry, manifest.name);
+		}
+		if (manifest.homepage) {
+			this.manifestUrls.set(registry, manifest.homepage);
+		}
+		if (manifest.repository && manifest.repository.url) {
+			this.manifestUrls.set(registry, manifest.repository.url);
 		}
 		if (manifest.dependencies) {
 			for (const [name, version] of Object.entries(manifest.dependencies)) {

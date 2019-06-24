@@ -6,6 +6,9 @@ const fs = require('fs');
 const { Select } = require('enquirer');
 const Guru = require('./guru');
 const { ReposRepository, SingleRepoNotFoundError } = require('./repos-repository');
+const Manifest = require('./manifest');
+const execa = require('execa');
+const crypto = require('crypto');
 
 const tty = process.stdin.isTTY;
 
@@ -22,17 +25,89 @@ class GuruFactory {
 
 		// Create repos.
 		const repos = new ReposRepository();
+		const manifests = [];
 		const lines = readline.createInterface({
 			input: manifestSource
 		});
 		lines.on('line', input => {
 			try {
-				repos.addFromEbi(input);
+				input = JSON.parse(input);
+				let registry = path.parse(input.filepath).name;
+				registry = registry === 'package' ? 'npm' : registry;
+				const manifest = input.fileContents;
+				const repoName = input.repository;
+				if (manifest) {
+					manifests.push(new Manifest(
+						repoName,
+						registry,
+						manifest
+					));
+					repos.addFromEbi(input);
+				}
 			} catch (error) {
 				log(`Cound not parse line. ${error.message}: ${input}`);
 			}
 		});
 		await once(lines, 'close');
+
+		const extractName = name => {
+			const parts = name.split('/');
+			return parts.pop();
+		};
+
+		const resolveConflict = matchedManifests => {
+			// Filter by repository url matching the repository id.
+			const urlFiltered = matchedManifests.filter(m => m.url.includes(m.repoName));
+			if (urlFiltered.length === 1) {
+				return urlFiltered;
+			}
+			// If no clear winners check the repo name includes the name.
+			const nameFiltered = matchedManifests.filter(m => m.repoName.includes(extractName(m.name)));
+			if (nameFiltered.length === 1) {
+				return nameFiltered;
+			}
+			// If no clear winners check the repo name equals the manifest name, without org.
+			const strictNameFiltered = matchedManifests.filter(m => extractName(m.repoName) === extractName(m.name));
+			if (strictNameFiltered.length === 1) {
+				return strictNameFiltered;
+			}
+			// Couldn't resolve.
+			return matchedManifests;
+		};
+
+		// Handle manifest conflicts.
+		let remaining = manifests.slice(0);
+		while (remaining.length > 0) {
+			const manifest = remaining.pop();
+			// All manifests which go by the name of this manifest.
+			const matchedManifests = manifests.filter(i =>
+				i.registry === manifest.registry &&
+				i.name === manifest.name
+			);
+			// No need to recheck those manifests matched here.
+			remaining = remaining.filter(m => !matchedManifests.includes(m));
+			const resolvedManifests = resolveConflict(matchedManifests);
+			if (matchedManifests.length > 1 && resolvedManifests.length === 1) {
+				matchedManifests.filter(m => m !== resolvedManifests[0]).forEach(m => {
+					m.name = crypto.randomBytes(20).toString('hex');
+				});
+				console.log(`Resolved: ${manifest.repoName} for ${manifest.registry}.`);
+			}
+			if (matchedManifests.length > 1 && resolvedManifests.length !== 1) {
+				const withDependency = manifests.filter(m => {
+					const dependencies = Array.from(m.dependencies.get(manifest.registry));
+					const dependencyNames = dependencies ? dependencies.map(d => d.name) : [];
+					const answer = dependencyNames.includes(m.name);
+					return answer;
+				});
+				if (withDependency.length > 0) {
+					console.log(`Error: ${matchedManifests.map(m => m.repoName)} for ${manifest.registry}.`);
+					console.log(`because: ${withDependency.map(d => d.repoName)}`);
+				} else {
+					console.log(`Ignoring: ${matchedManifests.map(m => m.repoName)} for ${manifest.registry}.`);
+				}
+			}
+		}
 
 		// Create guru.
 		try {
