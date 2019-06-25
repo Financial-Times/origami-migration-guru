@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 const { once } = require('events');
 const readline = require('readline');
 const chalk = require('chalk');
@@ -12,6 +13,56 @@ const crypto = require('crypto');
 
 const tty = process.stdin.isTTY;
 
+function updateOrigami(manifest) {
+	// todo make this proper
+	if (manifest.name && manifest.registry === 'npm') {
+		manifest.name.replace('o-', '@financial-times/o-');
+	}
+	return manifest;
+}
+
+async function updateRegistry(manifest) {
+	const registryNameMap = {
+		'ugydui763r7b': 'nori'
+	};
+	const manifestKey = getManifestKey(manifest);
+	if (!Object.keys(registryNameMap).includes(manifestKey)) {
+		// get name from registry
+		try {
+			const { stdout } = manifest.registry === 'npm' ?
+				await execa.shell(`npm view ${manifest.name} repository.url`) :
+				await execa.shell(`bower lookup ${manifest.name}`);
+			if (stdout.includes(manifest.repoName) && stdout.includes(manifest.url)) {
+				console.log(`looks good ${manifest.registry}:${manifest.name} (${manifest.repoName})`);
+			} else {
+				console.log(`replacing name of ${manifest.registry}:${manifest.repoName} (${manifest.repoName})`);
+				registryNameMap[manifestKey] = crypto.randomBytes(20).toString('hex');
+			}
+		} catch (error) {
+			// todo, does it not exist or was there some network error for instance?
+			console.log(`could not check ${manifest.registry}:${manifest.repoName} (${manifest.repoName})`);
+			registryNameMap[manifestKey] = crypto.randomBytes(20).toString('hex');
+		}
+		// or generate a random name if not conclusive
+	}
+	manifest.name = registryNameMap[manifestKey] || manifest.name;
+	return manifest;
+}
+
+async function correctManifestName(manifest) {
+	const funcs = [updateOrigami, updateRegistry];
+	for await (const func of funcs) {
+		manifest = await func(manifest);
+	}
+	return manifest;
+}
+
+function getManifestKey(manifest) {
+	const hash = crypto.createHash('sha256');
+	hash.update(manifest.registry + manifest.repoName + manifest.name + manifest.url);
+	return hash.digest('hex');
+}
+
 class GuruFactory {
 
 	static async createFromInput(targetName, manifestSource, log) {
@@ -25,30 +76,36 @@ class GuruFactory {
 
 		// Create repos.
 		const repos = new ReposRepository();
-		const manifests = [];
+		let manifests = [];
 		const lines = readline.createInterface({
 			input: manifestSource
 		});
 		lines.on('line', input => {
-			try {
-				input = JSON.parse(input);
-				let registry = path.parse(input.filepath).name;
-				registry = registry === 'package' ? 'npm' : registry;
-				const manifest = input.fileContents;
-				const repoName = input.repository;
-				if (manifest) {
-					manifests.push(new Manifest(
-						repoName,
-						registry,
-						manifest
-					));
-					repos.addFromEbi(input);
-				}
-			} catch (error) {
-				log(`Cound not parse line. ${error.message}: ${input}`);
+			// try {
+			input = JSON.parse(input);
+			let registry = path.parse(input.filepath).name;
+			registry = registry === 'package' ? 'npm' : registry;
+			const repoName = input.repository;
+			if (repoName && input.fileContents) {
+				const manifest = new Manifest(
+					repoName,
+					registry,
+					input.fileContents
+				);
+				manifests.push(manifest);
+				repos.addFromEbi(input);
 			}
+			// } catch (error) {
+			// 	log(`Cound not parse line. ${error.message}: ${input}`);
+			// }
 		});
 		await once(lines, 'close');
+
+		const correctedManifests = [];
+		for await (const manifest of manifests) {
+			correctedManifests.push(await correctManifestName(manifest));
+		}
+		manifests = correctedManifests;
 
 		const extractName = name => {
 			const parts = name.split('/');
