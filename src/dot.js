@@ -26,7 +26,7 @@ class Dot {
 			previousResult = result;
 		}
 
-		return `digraph {\nrankdir=LR\nsplines=ortho\nconcentrate=true\n${migrationStepsContent}\n}`;
+		return `digraph {\nrankdir=LR\nsplines=ortho\n${migrationStepsContent}\n}`;
 	}
 
 }
