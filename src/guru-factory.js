@@ -10,7 +10,6 @@ const { ReposRepository, SingleRepoNotFoundError } = require('./repos-repository
 const Manifest = require('./manifest');
 const execa = require('execa');
 const crypto = require('crypto');
-const semver = require('semver');
 
 const tty = process.stdin.isTTY;
 const cpuCount = require('os').cpus().length;
@@ -55,11 +54,11 @@ async function updateName(manifest, log) {
 			if (stdout.includes(repoName)) {
 				registryNameMap[manifestKey] = manifest.name;
 			} else {
-				registryNameMap[manifestKey] = crypto.randomBytes(20).toString('hex');
+				registryNameMap[manifestKey] = `${manifest.name}-${crypto.randomBytes(5).toString('hex')}`;
 			}
 		} catch (error) {
 			// todo, does it not exist or was there some network error for instance?
-			registryNameMap[manifestKey] = crypto.randomBytes(20).toString('hex');
+			registryNameMap[manifestKey] = `${manifest.name}-${crypto.randomBytes(5).toString('hex')}`;
 		}
 		// or generate a random name if not conclusive
 	}
@@ -116,7 +115,6 @@ class GuruFactory {
 
 		// Correct name of Origami manifests (package.json is generated on npm publish).
 		manifests = manifests.map(m => updateOrigami(m));
-
 		// Verify the name of any manifest which is depended on with its registry.
 		const allDependencies = [].concat(...manifests.map(m => Array.from(m.dependencies)));
 		const dependedOn = manifests.filter(manifest => {
@@ -127,7 +125,7 @@ class GuruFactory {
 				if (d.source !== manifest.registry) {
 					return false;
 				}
-				if (!semver.valid(semver.coerce(d.version))) {
+				if (!d.isSemver) {
 					return d.version.toLowerCase().includes(manifest.repoName.toLowerCase());
 				}
 				return d.name === manifest.name;
