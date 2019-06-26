@@ -26,14 +26,11 @@ class Manifest {
 			manifest.repository.url :
 			manifest.homepage;
 		this.url = this.url || '';
-		this.dependencies = new Map([
-			['npm', new Set()],
-			['bower', new Set()]
-		]);
+		this.dependencies = new Set();
 
 		if (manifest.dependencies) {
 			for (const [name, version] of Object.entries(manifest.dependencies)) {
-				this.dependencies.get(registry).add(new Dependency(name, version, registry));
+				this.dependencies.add(new Dependency(name, version, registry));
 			}
 		}
 	}

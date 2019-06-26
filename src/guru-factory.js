@@ -10,8 +10,21 @@ const { ReposRepository, SingleRepoNotFoundError } = require('./repos-repository
 const Manifest = require('./manifest');
 const execa = require('execa');
 const crypto = require('crypto');
+const semver = require('semver');
 
 const tty = process.stdin.isTTY;
+const cpuCount = require('os').cpus().length;
+
+const registryNameFileDir = './tmp';
+const registryNameFile = `${registryNameFileDir}/registry-name-map.json`;
+let registryNameMapContents;
+
+try {
+	fs.accessSync(registryNameFile, fs.constants.R_OK | fs.constants.W_OK);
+	registryNameMapContents = fs.readFileSync(registryNameFile);
+} catch (error) {}
+
+const registryNameMap = registryNameMapContents ? JSON.parse(registryNameMapContents) : {};
 
 function updateOrigami(manifest) {
 	// todo make this proper
@@ -21,26 +34,31 @@ function updateOrigami(manifest) {
 	return manifest;
 }
 
-async function updateRegistry(manifest) {
-	const registryNameMap = {
-		'ugydui763r7b': 'nori'
-	};
+function getManifestKey(manifest) {
+	const hash = crypto.createHash('sha256');
+	hash.update(manifest.registry + manifest.repoName + manifest.name + manifest.url);
+	return hash.digest('hex');
+}
+
+async function updateName(manifest, log) {
 	const manifestKey = getManifestKey(manifest);
 	if (!Object.keys(registryNameMap).includes(manifestKey)) {
-		// get name from registry
 		try {
-			const { stdout } = manifest.registry === 'npm' ?
+			if (tty) {
+				log(`Verifying ${manifest.repoName} is published to ${manifest.registry} as ${manifest.name}.`);
+			}
+			let { stdout } = manifest.registry === 'npm' ?
 				await execa.shell(`npm view ${manifest.name} repository.url`) :
 				await execa.shell(`bower lookup ${manifest.name}`);
-			if (stdout.includes(manifest.repoName) && stdout.includes(manifest.url)) {
-				console.log(`looks good ${manifest.registry}:${manifest.name} (${manifest.repoName})`);
+			stdout = stdout.toLowerCase();
+			const repoName = manifest.repoName.toLowerCase();
+			if (stdout.includes(repoName)) {
+				registryNameMap[manifestKey] = manifest.name;
 			} else {
-				console.log(`replacing name of ${manifest.registry}:${manifest.repoName} (${manifest.repoName})`);
 				registryNameMap[manifestKey] = crypto.randomBytes(20).toString('hex');
 			}
 		} catch (error) {
 			// todo, does it not exist or was there some network error for instance?
-			console.log(`could not check ${manifest.registry}:${manifest.repoName} (${manifest.repoName})`);
 			registryNameMap[manifestKey] = crypto.randomBytes(20).toString('hex');
 		}
 		// or generate a random name if not conclusive
@@ -49,18 +67,14 @@ async function updateRegistry(manifest) {
 	return manifest;
 }
 
-async function correctManifestName(manifest) {
-	const funcs = [updateOrigami, updateRegistry];
-	for await (const func of funcs) {
-		manifest = await func(manifest);
+async function batchValidateName(manifests, log) {
+	const batch = manifests.splice(0, Math.max(1, cpuCount - 1));
+	const processed = await Promise.all(batch.map(m => updateName(m, log)));
+	if (manifests.length === 0) {
+		return processed;
 	}
-	return manifest;
-}
 
-function getManifestKey(manifest) {
-	const hash = crypto.createHash('sha256');
-	hash.update(manifest.registry + manifest.repoName + manifest.name + manifest.url);
-	return hash.digest('hex');
+	return processed.concat(await batchValidateName(manifests, log));
 }
 
 class GuruFactory {
@@ -81,90 +95,54 @@ class GuruFactory {
 			input: manifestSource
 		});
 		lines.on('line', input => {
-			// try {
-			input = JSON.parse(input);
-			let registry = path.parse(input.filepath).name;
-			registry = registry === 'package' ? 'npm' : registry;
-			const repoName = input.repository;
-			if (repoName && input.fileContents) {
-				const manifest = new Manifest(
-					repoName,
-					registry,
-					input.fileContents
-				);
-				manifests.push(manifest);
-				repos.addFromEbi(input);
+			try {
+				input = JSON.parse(input);
+				let registry = path.parse(input.filepath).name;
+				registry = registry === 'package' ? 'npm' : registry;
+				const repoName = input.repository;
+				if (repoName && input.fileContents) {
+					const manifest = new Manifest(
+						repoName,
+						registry,
+						input.fileContents
+					);
+					manifests.push(manifest);
+				}
+			} catch (error) {
+				log(`Cound not parse line. ${error.message}: ${input}`);
 			}
-			// } catch (error) {
-			// 	log(`Cound not parse line. ${error.message}: ${input}`);
-			// }
 		});
 		await once(lines, 'close');
 
-		const correctedManifests = [];
-		for await (const manifest of manifests) {
-			correctedManifests.push(await correctManifestName(manifest));
-		}
-		manifests = correctedManifests;
+		// Correct name of Origami manifests (package.json is generated on npm publish).
+		manifests = manifests.map(m => updateOrigami(m));
 
-		const extractName = name => {
-			const parts = name.split('/');
-			return parts.pop();
-		};
-
-		const resolveConflict = matchedManifests => {
-			// Filter by repository url matching the repository id.
-			const urlFiltered = matchedManifests.filter(m => m.url.includes(m.repoName));
-			if (urlFiltered.length === 1) {
-				return urlFiltered;
+		// Verify the name of any manifest which is depended on with its registry.
+		const allDependencies = [].concat(...manifests.map(m => Array.from(m.dependencies)));
+		const dependedOn = manifests.filter(manifest => {
+			if (!manifest.name) {
+				return false;
 			}
-			// If no clear winners check the repo name includes the name.
-			const nameFiltered = matchedManifests.filter(m => m.repoName.includes(extractName(m.name)));
-			if (nameFiltered.length === 1) {
-				return nameFiltered;
-			}
-			// If no clear winners check the repo name equals the manifest name, without org.
-			const strictNameFiltered = matchedManifests.filter(m => extractName(m.repoName) === extractName(m.name));
-			if (strictNameFiltered.length === 1) {
-				return strictNameFiltered;
-			}
-			// Couldn't resolve.
-			return matchedManifests;
-		};
-
-		// Handle manifest conflicts.
-		let remaining = manifests.slice(0);
-		while (remaining.length > 0) {
-			const manifest = remaining.pop();
-			// All manifests which go by the name of this manifest.
-			const matchedManifests = manifests.filter(i =>
-				i.registry === manifest.registry &&
-				i.name === manifest.name
-			);
-			// No need to recheck those manifests matched here.
-			remaining = remaining.filter(m => !matchedManifests.includes(m));
-			const resolvedManifests = resolveConflict(matchedManifests);
-			if (matchedManifests.length > 1 && resolvedManifests.length === 1) {
-				matchedManifests.filter(m => m !== resolvedManifests[0]).forEach(m => {
-					m.name = crypto.randomBytes(20).toString('hex');
-				});
-				console.log(`Resolved: ${manifest.repoName} for ${manifest.registry}.`);
-			}
-			if (matchedManifests.length > 1 && resolvedManifests.length !== 1) {
-				const withDependency = manifests.filter(m => {
-					const dependencies = Array.from(m.dependencies.get(manifest.registry));
-					const dependencyNames = dependencies ? dependencies.map(d => d.name) : [];
-					const answer = dependencyNames.includes(m.name);
-					return answer;
-				});
-				if (withDependency.length > 0) {
-					console.log(`Error: ${matchedManifests.map(m => m.repoName)} for ${manifest.registry}.`);
-					console.log(`because: ${withDependency.map(d => d.repoName)}`);
-				} else {
-					console.log(`Ignoring: ${matchedManifests.map(m => m.repoName)} for ${manifest.registry}.`);
+			const foundDependency = allDependencies.find(d => {
+				if (d.source !== manifest.registry) {
+					return false;
 				}
-			}
+				if (!semver.valid(semver.coerce(d.version))) {
+					return d.version.toLowerCase().includes(manifest.repoName.toLowerCase());
+				}
+				return d.name === manifest.name;
+			});
+			return Boolean(foundDependency);
+		});
+		const leafs = manifests.filter(m => !dependedOn.includes(m));
+		manifests = [...leafs, ...await batchValidateName(dependedOn, log)];
+		if (!fs.existsSync(registryNameFileDir)) {
+			fs.mkdirSync(registryNameFileDir);
 		}
+		fs.writeFileSync(registryNameFile, JSON.stringify(registryNameMap));
+
+		// Create repos from the verified manifests.
+		repos.addFromManifests(manifests);
 
 		// Create guru.
 		try {

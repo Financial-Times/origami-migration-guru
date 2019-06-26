@@ -60,25 +60,13 @@ class Repo {
 	/**
 	 * Add a manifest file to the repository and extract dependencies for the repo.
 	 * @param {String|null} registry - The registry the manifest is for `npm` or `bower`.
-	 * @param {String|Object} manifest - The manifest file as a JSON object or string.
+	 * @param {Manifest} manifest - The manifest for this repo.
 	 */
 	addManifest(registry, manifest) {
 		validateRegistry(registry);
-		manifest = typeof manifest === 'string' ? JSON.parse(manifest) : manifest;
-		if (manifest.name) {
-			this.manifestNames.set(registry, manifest.name);
-		}
-		if (manifest.homepage) {
-			this.manifestUrls.set(registry, manifest.homepage);
-		}
-		if (manifest.repository && manifest.repository.url) {
-			this.manifestUrls.set(registry, manifest.repository.url);
-		}
-		if (manifest.dependencies) {
-			for (const [name, version] of Object.entries(manifest.dependencies)) {
-				this.dependencies.get(registry).add(new Dependency(name, version, registry));
-			}
-		}
+		this.manifestUrls.set(registry, manifest.url);
+		this.manifestNames.set(registry, manifest.name);
+		this.dependencies.set(registry, manifest.dependencies);
 	}
 }
 
