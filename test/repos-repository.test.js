@@ -270,7 +270,7 @@ describe('Repos', () => {
 			]);
 		});
 
-		it('Returns true when the dependency represents the given repo', () => {
+		it('Returns true when the semver dependency represents the given repo', () => {
 			// Todo: Remove find one call so `getDirectDependents` test
 			// does not rely on `findOne` working.
 			const repo = repos.findOne('a');
@@ -278,9 +278,21 @@ describe('Repos', () => {
 			proclaim.isTrue(ReposRepository.repoMatchesDependency(repo, dependency));
 		});
 
-		it('Returns false when the dependency does not represent the given repo due to a registry mismatch', () => {
+		it('Returns true when the Git url dependency represents the given repo', () => {
+			const repo = repos.findOne('a');
+			const dependency = new Dependency('b', 'git+ssh://git@github.com:Financial-Times/a.git#v1.0.0', 'npm');
+			proclaim.isTrue(ReposRepository.repoMatchesDependency(repo, dependency));
+		});
+
+		it('Returns false when the semver dependency does not represent the given repo due to a registry mismatch', () => {
 			const repo = repos.findOne('a');
 			const dependency = new Dependency('a', '^1.0.0', 'bower');
+			proclaim.isFalse(ReposRepository.repoMatchesDependency(repo, dependency));
+		});
+
+		it('Returns false when the Git url dependency does not represent the given repo', () => {
+			const repo = repos.findOne('a');
+			const dependency = new Dependency('b', 'git+ssh://git@github.com:Financial-Times/b.git#v1.0.0', 'npm');
 			proclaim.isFalse(ReposRepository.repoMatchesDependency(repo, dependency));
 		});
 

@@ -8,7 +8,7 @@ class Dependency {
 		this.name = name;
 		this.version = version;
 		this.source = source;
-		this.isSemver = semver.valid(semver.coerce(version));
+		this.isSemver = semver.valid(version) || semver.validRange(version);
 	}
 }
 
