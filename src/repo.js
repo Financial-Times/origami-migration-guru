@@ -47,7 +47,7 @@ class Repo {
 		const registries = registry ? [registry] : ['bower', 'npm'];
 		return registries.reduce((dependencies, registry) => {
 			const manifest = this.manifests.get(registry);
-			if(!manifest) {
+			if (!manifest) {
 				return dependencies;
 			}
 			const registryDependencies = manifest.dependencies;
