@@ -81,9 +81,15 @@ class ReposRepository {
 	static repoMatchesDependency(repo, dependency) {
 		validateRepo(repo);
 		validateDependency(dependency);
-		// not semver: check repo id is in the git url, url, or local
-		if (!dependency.isSemver) {
-			return dependency.version.toLowerCase().includes(repo.id.toLowerCase());
+		// Not semver: match git url.
+		// git+ssh://git@github.com:Financial-Times/a.git#v1.0.27
+		// git+ssh://git@github.com:Financial-Times/a#semver:^5.0
+		// git+https://the-ft@github.com/Financial-Times/a.git
+		// git://github.com/Financial-Times/a.git#v1.0.27
+		// Financial-Times/a
+		if (!dependency.isSemver && dependency.version !== 'latest') {
+			const gitUrlReg = new RegExp(`^(?:[git].*)?(${repo.id})(?:[#.].+)?$`, 'i');
+			return Boolean(dependency.version.match(gitUrlReg));
 		}
 		// semver
 		return dependency.name === repo.getName(dependency.source);

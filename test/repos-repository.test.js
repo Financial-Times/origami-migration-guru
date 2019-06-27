@@ -284,6 +284,12 @@ describe('Repos', () => {
 			proclaim.isTrue(ReposRepository.repoMatchesDependency(repo, dependency));
 		});
 
+		it('Returns true when the short Git url dependency represents the given repo', () => {
+			const repo = repos.findOne('a');
+			const dependency = new Dependency('b', 'Financial-Times/a', 'npm');
+			proclaim.isTrue(ReposRepository.repoMatchesDependency(repo, dependency));
+		});
+
 		it('Returns false when the semver dependency does not represent the given repo due to a registry mismatch', () => {
 			const repo = repos.findOne('a');
 			const dependency = new Dependency('a', '^1.0.0', 'bower');
@@ -292,7 +298,13 @@ describe('Repos', () => {
 
 		it('Returns false when the Git url dependency does not represent the given repo', () => {
 			const repo = repos.findOne('a');
-			const dependency = new Dependency('b', 'git+ssh://git@github.com:Financial-Times/b.git#v1.0.0', 'npm');
+			const dependency = new Dependency('b', 'git+ssh://git@github.com:Financial-Times/ab.git#v1.0.0', 'npm');
+			proclaim.isFalse(ReposRepository.repoMatchesDependency(repo, dependency));
+		});
+
+		it('Returns false for a http url dependency', () => {
+			const repo = repos.findOne('a');
+			const dependency = new Dependency('b', 'http://example.in.ft.com/a.tar.gz', 'npm');
 			proclaim.isFalse(ReposRepository.repoMatchesDependency(repo, dependency));
 		});
 
