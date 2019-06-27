@@ -1,2 +1,2 @@
-{"filepath":"bower.json","repository":"Financial-Times/a","fileContents":"{\"name\":\"a\",\"dependencies\":{\"b\":\"^4.7.9\"}}"}
-{"filepath":"bower.json","repository":"Financial-Times/b","fileContents":"{\"name\":\"b\",\"dependencies\":{}}"}
+{"filepath":"bower.json","repository":"Financial-Times/a","fileContents":"{\"name\":\"a\",\"dependencies\":{\"o-test-component\":\"1.0.29\"}}"}
+{"filepath":"bower.json","repository":"Financial-Times/o-test-component","fileContents":"{\"name\":\"o-test-component\",\"dependencies\":{}}"}

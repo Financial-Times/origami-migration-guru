@@ -1,19 +1,25 @@
-/* eslint-disable no-loop-func */
 const Guru = require('../src/guru');
 const { ReposRepository } = require('../src/repos-repository');
+const Manifest = require('../src/manifest');
+const Repo = require('../src/repo');
 const proclaim = require('proclaim');
 
-const generateEbiResult = (component, dependencies) => {
-	return `{"filepath":"bower.json","repository":"Financial-Times/${component}","fileContents":"{\\"name\\":\\"${component}\\",\\"dependencies\\":{${dependencies.map(dependency => `\\"${dependency}\\":\\"^4.7.9\\"`)}}}"}`;
-};
-
-const getRepos = repoNames => {
-	const repos = new ReposRepository();
-	for (const [name, dependencies] of Object.entries(repoNames)) {
-		const result = generateEbiResult(name, dependencies);
-		repos.addFromEbi(result);
+const createRepos = repoData => {
+	const repos = [];
+	for (const [name, dependencies] of Object.entries(repoData)) {
+		const manifestFile = JSON.stringify({
+			name: name,
+			dependencies: dependencies.reduce((d, name) => {
+				d[name] = '^1.0.0';
+				return d;
+			}, {})
+		});
+		const repoName = `Financial-Times/${name}`;
+		const repo = new Repo(repoName);
+		repo.addManifest(new Manifest(repoName, 'bower', manifestFile));
+		repos.push(repo);
 	}
-	return repos;
+	return new ReposRepository(repos);
 };
 
 const expectRepos = (reposToMigrate, expectedNames, count) => {
@@ -25,7 +31,7 @@ const expectRepos = (reposToMigrate, expectedNames, count) => {
 };
 
 const getGuru = (target, repos) => {
-	return new Guru(target, getRepos(repos));
+	return new Guru(target, createRepos(repos));
 };
 
 const assertMigrations = async (guru, expectedMigrations) => {

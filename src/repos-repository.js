@@ -1,5 +1,3 @@
-/* eslint-disable complexity */
-const path = require('path');
 const Repo = require('./repo');
 const Dependency = require('./dependency');
 

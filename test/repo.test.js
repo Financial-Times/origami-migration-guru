@@ -1,38 +1,53 @@
-/* eslint-disable no-loop-func */
 const Repo = require('../src/repo');
 const Dependency = require('../src/dependency');
+const Manifest = require('../src/manifest');
 const proclaim = require('proclaim');
 
 describe('Repo', () => {
 	let repo;
-	const npmManifest = {
-		name: 'npm-dummy-name',
-		dependencies: {
-			a: '^1.0.0',
-			b: '^1.0.0',
-		}
-	};
-	const bowerManifest = {
-		name: 'bower-dummy-name',
-		dependencies: {
-			c: '^1.0.0',
-			d: '^1.0.0',
-		}
-	};
+	const npmManifest = new Manifest(
+		'Financial-Times/npm-dummy-name',
+		'npm',
+		JSON.stringify({
+			name: 'npm-dummy-name',
+			dependencies: {
+				a: '^1.0.0',
+				b: '^1.0.0',
+			}
+		})
+	);
+	const bowerManifest = new Manifest(
+		'Financial-Times/bower-dummy-name',
+		'bower',
+		JSON.stringify({
+			name: 'bower-dummy-name',
+			dependencies: {
+				c: '^1.0.0',
+				d: '^1.0.0',
+			}
+		})
+	);
 
 	beforeEach(() => {
 		repo = new Repo('financial-times/dummy-name');
-		repo.addManifest('npm', npmManifest);
-		repo.addManifest('bower', bowerManifest);
+		repo.addManifest(npmManifest);
+		repo.addManifest(bowerManifest);
 	});
 
 	describe('addManifest', () => {
-		it('Does not error when passed manifest as a string', async () => {
-			proclaim.doesNotThrow(() => repo.addManifest('bower', JSON.stringify(bowerManifest)));
+		it('Errors when passed a manifest string', async () => {
+			proclaim.throws(() => repo.addManifest(JSON.stringify(bowerManifest)));
 		});
 
 		it('Errors given a non-supported registry "composer" ', async () => {
-			proclaim.throws(() => repo.addManifest('composer', {}));
+			proclaim.throws(() => repo.addManifest(new Manifest(
+				'Financial-Times/composer-dummy-name',
+				'composer',
+				JSON.stringify({
+					name: 'composer-dummy-name',
+					dependencies: {}
+				})
+			)));
 		});
 	});
 

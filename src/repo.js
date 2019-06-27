@@ -1,3 +1,5 @@
+const Manifest = require('./manifest');
+
 /**
  * @param {*} registry - To validate is a supported registry name.
  * @throws {Error}
@@ -24,13 +26,13 @@ class Repo {
 	 * But it may be named differently in `bower.json` or `package.json`, e.g.
 	 * "@financial-times/example".
 	 * @param {String|null} registry [null] - The registry to get the repository name from `npm`, `bower`, or `null` for the repository name without organisation.
-	 * @return {String|null} - The repository's name.
+	 * @return {String|undefined} - The repository's name.
 	 */
 	getName(registry = null) {
 		if (registry) {
 			validateRegistry(registry);
 			const manifest = this.manifests.get(registry);
-			return manifest ? manifest.name : null;
+			return manifest ? manifest.name : undefined;
 		}
 		return this.name;
 	}
@@ -57,12 +59,14 @@ class Repo {
 
 	/**
 	 * Add a manifest file to the repository and extract dependencies for the repo.
-	 * @param {String|null} registry - The registry the manifest is for `npm` or `bower`.
 	 * @param {Manifest} manifest - The manifest for this repo.
 	 */
-	addManifest(registry, manifest) {
-		validateRegistry(registry);
-		this.manifests.set(registry, manifest);
+	addManifest(manifest) {
+		validateRegistry(manifest.registry);
+		if (!(manifest instanceof Manifest)) {
+			throw new TypeError('"manifest" must be an instance of "Manifest".');
+		}
+		this.manifests.set(manifest.registry, manifest);
 	}
 }
 

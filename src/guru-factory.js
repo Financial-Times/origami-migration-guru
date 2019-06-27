@@ -1,4 +1,3 @@
-/* eslint-disable complexity */
 const { once } = require('events');
 const readline = require('readline');
 const chalk = require('chalk');
@@ -56,7 +55,7 @@ class GuruFactory {
 		const manifests = await normaliser.normalise();
 		const repos = manifests.reduce((repos, manifest) => {
 			const repo = repos.get(manifest.repoName) || new Repo(manifest.repoName);
-			repo.addManifest(manifest.registry, manifest);
+			repo.addManifest(manifest);
 			repos.set(manifest.repoName, repo);
 			return repos;
 		}, new Map());

@@ -1,23 +1,21 @@
 const { ReposRepository } = require('../src/repos-repository');
 const Repo = require('../src/repo');
+const Manifest = require('../src/manifest');
 const Dependency = require('../src/dependency');
 const proclaim = require('proclaim');
 
-function createRepos(repoData) {
-	const repos = new ReposRepository();
-	repoData.forEach(data => {
-		const ebi = {
-			filepath: data.registry === 'npm' ? 'package.json' : 'bower.json',
-			repository: data.id ? data.id : `Financial-Times/${data.name}`,
-			fileContents: {
-				name: data.name,
-				dependencies: data.dependencies
-			}
-		};
-		repos.addFromEbi(JSON.stringify(ebi));
+const createRepos = reposData => {
+	const repos = [];
+	reposData.forEach(repoData => {
+		const manifestFile = JSON.stringify(repoData);
+		const repoName = repoData.id || `Financial-Times/${repoData.name}`;
+		const registry = repoData.registry || 'bower';
+		const repo = new Repo(repoName);
+		repo.addManifest(new Manifest(repoName, registry, manifestFile));
+		repos.push(repo);
 	});
-	return repos;
-}
+	return new ReposRepository(repos);
+};
 
 const assertRepos = (actual, expectedNames) => {
 	proclaim.isInstanceOf(actual, Array);
@@ -50,10 +48,10 @@ describe('Repos', () => {
 	let repos;
 
 	beforeEach(() => {
-		repos = new ReposRepository();
+		repos = new ReposRepository([]);
 	});
 
-	describe('addFromEbi', () => {
+	describe.skip('addFromEbi', () => {
 		it('Creates successfully for a found bower manifest.', () => {
 			const ebi = {
 				filepath: 'bower.json',
@@ -272,7 +270,7 @@ describe('Repos', () => {
 			]);
 		});
 
-		it('Returns true when the dependency represents the give repo', () => {
+		it('Returns true when the dependency represents the given repo', () => {
 			// Todo: Remove find one call so `getDirectDependents` test
 			// does not rely on `findOne` working.
 			const repo = repos.findOne('a');
