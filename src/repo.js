@@ -1,5 +1,3 @@
-const Dependency = require('./dependency');
-
 /**
  * @param {*} registry - To validate is a supported registry name.
  * @throws {Error}
@@ -17,12 +15,7 @@ class Repo {
 	constructor(repoName) {
 		this.id = repoName;
 		[this.org, this.name] = repoName.split('/');
-		this.manifestNames = new Map();
-		this.manifestUrls = new Map();
-		this.dependencies = new Map([
-			['npm', new Set()],
-			['bower', new Set()]
-		]);
+		this.manifests = new Map();
 	}
 
 	/**
@@ -31,12 +24,13 @@ class Repo {
 	 * But it may be named differently in `bower.json` or `package.json`, e.g.
 	 * "@financial-times/example".
 	 * @param {String|null} registry [null] - The registry to get the repository name from `npm`, `bower`, or `null` for the repository name without organisation.
-	 * @return {String} - The repository's name.
+	 * @return {String|null} - The repository's name.
 	 */
 	getName(registry = null) {
 		if (registry) {
 			validateRegistry(registry);
-			return this.manifestNames.get(registry);
+			const manifest = this.manifests.get(registry);
+			return manifest ? manifest.name : null;
 		}
 		return this.name;
 	}
@@ -52,7 +46,11 @@ class Repo {
 		}
 		const registries = registry ? [registry] : ['bower', 'npm'];
 		return registries.reduce((dependencies, registry) => {
-			const registryDependencies = this.dependencies.get(registry);
+			const manifest = this.manifests.get(registry);
+			if(!manifest) {
+				return dependencies;
+			}
+			const registryDependencies = manifest.dependencies;
 			return dependencies.concat([...registryDependencies]);
 		}, []);
 	}
@@ -64,9 +62,7 @@ class Repo {
 	 */
 	addManifest(registry, manifest) {
 		validateRegistry(registry);
-		this.manifestUrls.set(registry, manifest.url);
-		this.manifestNames.set(registry, manifest.name);
-		this.dependencies.set(registry, manifest.dependencies);
+		this.manifests.set(registry, manifest);
 	}
 }
 

@@ -34,8 +34,8 @@ class SingleRepoNotFoundError extends Error {
 }
 
 class ReposRepository {
-	constructor() {
-		this._repos = [];
+	constructor(repos) {
+		this._repos = Array.from(repos);
 	}
 
 	/**
@@ -157,24 +157,6 @@ class ReposRepository {
 		return this._repos.filter(repo => dependencies.find(
 			dependency => ReposRepository.repoMatchesDependency(repo, dependency)
 		));
-	}
-
-	/**
-	 * @param {Array<Manifest>} manifests - An array of manifests to create repos for.
-	 */
-	addFromManifests(manifests) {
-		manifests.forEach(function (manifest) {
-			let repo;
-			try {
-				repo = this.findOne(manifest.repoName);
-				repo.addManifest(manifest.registry, manifest);
-			} catch (error) {}
-			if (!repo) {
-				repo = new Repo(manifest.repoName);
-				repo.addManifest(manifest.registry, manifest);
-				this._repos.push(repo);
-			}
-		}.bind(this));
 	}
 }
 

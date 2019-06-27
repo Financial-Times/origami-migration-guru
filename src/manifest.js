@@ -28,7 +28,7 @@ class Manifest {
 		this.url = this.url || '';
 		this.dependencies = new Set();
 
-		if (manifest.dependencies) {
+		if (typeof manifest.dependencies === 'object') {
 			for (const [name, version] of Object.entries(manifest.dependencies)) {
 				this.dependencies.add(new Dependency(name, version, registry));
 			}
