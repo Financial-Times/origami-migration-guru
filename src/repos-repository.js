@@ -74,28 +74,6 @@ class ReposRepository {
 	}
 
 	/**
-	 * @param {Repo} repo The repo to compare against a dependency.
-	 * @param {Dependency} dependency The dependency to compare the repo against.
-	 * @return {Boolean} - True if the dependency represents the repo.
-	 */
-	static repoMatchesDependency(repo, dependency) {
-		validateRepo(repo);
-		validateDependency(dependency);
-		// Not semver: match git url.
-		// git+ssh://git@github.com:Financial-Times/a.git#v1.0.27
-		// git+ssh://git@github.com:Financial-Times/a#semver:^5.0
-		// git+https://the-ft@github.com/Financial-Times/a.git
-		// git://github.com/Financial-Times/a.git#v1.0.27
-		// Financial-Times/a
-		if (!dependency.isSemver && dependency.version !== 'latest') {
-			const gitUrlReg = new RegExp(`^(?:[git].*)?(${repo.id})(?:[#.].+)?$`, 'i');
-			return Boolean(dependency.version.match(gitUrlReg));
-		}
-		// semver
-		return dependency.name === repo.getName(dependency.source);
-	}
-
-	/**
 	 * @param {Repo} repo The repo to find dependents for.
 	 * @return {Array<Repo>} - All repos which are direct dependents.
 	 */
@@ -103,9 +81,7 @@ class ReposRepository {
 		validateRepo(repo);
 		return this._repos.filter(current => {
 			const dependencies = current.getDependencies();
-			return dependencies.some(dependency => {
-				return ReposRepository.repoMatchesDependency(repo, dependency);
-			});
+			return dependencies.some(d => repo.is(d));
 		});
 	}
 
@@ -158,9 +134,7 @@ class ReposRepository {
 	getDirectDependencies(repo) {
 		validateRepo(repo);
 		const dependencies = repo.getDependencies();
-		return this._repos.filter(repo => dependencies.find(
-			dependency => ReposRepository.repoMatchesDependency(repo, dependency)
-		));
+		return this._repos.filter(repo => dependencies.some(d => repo.is(d)));
 	}
 }
 

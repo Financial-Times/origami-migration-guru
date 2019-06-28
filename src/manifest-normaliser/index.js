@@ -1,22 +1,6 @@
 const ExistsInRegistryNormaliser = require('./exists-in-registry-normaliser');
 const OrigamiNormaliser = require('./origami-normaliser');
 
-function manifestIsDependedOn(manifest, allDependencies) {
-	if (!manifest.name) {
-		return false;
-	}
-	const foundDependency = allDependencies.find(d => {
-		if (d.source !== manifest.registry) {
-			return false;
-		}
-		if (!d.isSemver) {
-			return d.version.toLowerCase().includes(manifest.repoName.toLowerCase());
-		}
-		return d.name === manifest.name;
-	});
-	return Boolean(foundDependency);
-}
-
 class ManifestNormaliser {
 
 	constructor(manifests, log) {
@@ -34,7 +18,7 @@ class ManifestNormaliser {
 		// is not actually pubished under that name.
 		const exists = new ExistsInRegistryNormaliser(this.log);
 		manifests = Promise.all(manifests.map(m => {
-			if (!manifestIsDependedOn(m, this.allDependencies)) {
+			if (!m.name || !this.allDependencies.some(d => m.is(d))) {
 				return m;
 			}
 			return exists.normalise(m);

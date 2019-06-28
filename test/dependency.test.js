@@ -6,13 +6,13 @@ describe('Dependency', () => {
 		const dependency = new Dependency('a', '^1.0.0', 'bower');
 		proclaim.equal(dependency.name, 'a');
 		proclaim.equal(dependency.version, '^1.0.0');
-		proclaim.equal(dependency.source, 'bower');
+		proclaim.equal(dependency.registry, 'bower');
 	});
 	it('Creates for npm successfully.', () => {
 		const dependency = new Dependency('a', '^1.0.0', 'npm');
 		proclaim.equal(dependency.name, 'a');
 		proclaim.equal(dependency.version, '^1.0.0');
-		proclaim.equal(dependency.source, 'npm');
+		proclaim.equal(dependency.registry, 'npm');
 	});
 	it('Errors for an unsupported registry "composer".', () => {
 		proclaim.throws(() => {

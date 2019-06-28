@@ -17,7 +17,7 @@ describe('Repo', () => {
 		})
 	);
 	const bowerManifest = new Manifest(
-		'Financial-Times/bower-dummy-name',
+		'Financial-Times/dummy-name',
 		'bower',
 		JSON.stringify({
 			name: 'bower-dummy-name',
@@ -120,4 +120,67 @@ describe('Repo', () => {
 		});
 	});
 
+	describe('is(Dependency)', () => {
+
+		beforeEach(() => {
+			repo = new Repo('financial-times/dummy-name');
+			repo.addManifest(new Manifest(
+				'Financial-Times/a',
+				'npm',
+				JSON.stringify({name: 'a', dependencies: {}})
+			));
+		});
+
+		it('Returns true when the semver dependency represents the repo', () => {
+			const dependency = new Dependency('a', '^1.0.0', 'npm');
+			proclaim.isTrue(repo.is(dependency));
+		});
+
+		it('Returns true when the Git url dependency represents the repo', () => {
+			const githubUrls = [
+				'git+ssh://git@github.com:Financial-Times/a.git#v1.0.27',
+				'git+ssh://git@github.com:Financial-Times/a#semver:^5.0',
+				'git+https://the-ft@github.com/Financial-Times/a.git',
+				'git://github.com/Financial-Times/a.git#v1.0.27',
+				'Financial-Times/a'
+			];
+			for (const url of githubUrls) {
+				const dependency = new Dependency('b', url, 'npm');
+				proclaim.isTrue(repo.is(dependency));
+			}
+		});
+
+		it('Returns false when the semver dependency does not represent the repo due to a registry mismatch', () => {
+			const dependency = new Dependency('a', '^1.0.0', 'bower');
+			proclaim.isFalse(repo.is(dependency));
+		});
+
+		it('Returns false when the Git url dependency does not represent the repo', () => {
+			const githubUrls = [
+				'git+ssh://git@github.com:Financial-Times/az.git#v1.0.27',
+				'git+ssh://git@github.com:Financial-Times/az#semver:^5.0',
+				'git+https://the-ft@github.com/Financial-Times/az.git',
+				'git://github.com/Financial-Times/az.git#v1.0.27',
+				'Financial-Times/az'
+			];
+			for (const url of githubUrls) {
+				const dependency = new Dependency('b', url, 'npm');
+				proclaim.isFalse(repo.is(dependency), `Expected a false match for the url "${url}".`);
+			}
+		});
+
+		it('Returns false for a http url dependency', () => {
+			const dependency = new Dependency('b', 'http://example.in.ft.com/a.tar.gz', 'npm');
+			proclaim.isFalse(repo.is(dependency));
+		});
+
+		it('Returns false when the dependency does not represent the repo due to a name mismatch', () => {
+			const dependency = new Dependency('c', '^1.0.0', 'npm');
+			proclaim.isFalse(repo.is(dependency));
+		});
+
+		it('Errors when no dependency is given.', () => {
+			proclaim.throws(() => repo.is(undefined));
+		});
+	});
 });

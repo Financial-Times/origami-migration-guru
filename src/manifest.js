@@ -35,6 +35,32 @@ class Manifest {
 		}
 	}
 
+	/**
+	 * Check if a dependency represents this manifest.
+	 * @param {Dependency} dependency - The dependency which may represent this manifest.
+	 * @return {Boolean} - True if the dependency is for this manifest.
+	 */
+	is(dependency) {
+		if (!(dependency instanceof Dependency)) {
+			throw new TypeError('Expected a Dependency.');
+		}
+		// The dependency is published in a different registry.
+		if (dependency.registry !== this.registry) {
+			return false;
+		}
+		// Not semver: match repo name in git url.
+		// git+ssh://git@github.com:Financial-Times/a.git#v1.0.27
+		// git+ssh://git@github.com:Financial-Times/a#semver:^5.0
+		// git+https://the-ft@github.com/Financial-Times/a.git
+		// git://github.com/Financial-Times/a.git#v1.0.27
+		// Financial-Times/a
+		if (!dependency.isSemver && dependency.version !== 'latest') {
+			const gitUrlReg = new RegExp(`^(?:[git].*)?(${this.repoName})(?:[#.].+)?$`, 'i');
+			return Boolean(dependency.version.match(gitUrlReg));
+		}
+		// Semver: match package name.
+		return dependency.name === this.name;
+	}
 }
 
 module.exports = Manifest;

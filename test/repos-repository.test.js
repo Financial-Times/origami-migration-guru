@@ -1,7 +1,6 @@
 const { ReposRepository } = require('../src/repos-repository');
 const Repo = require('../src/repo');
 const Manifest = require('../src/manifest');
-const Dependency = require('../src/dependency');
 const proclaim = require('proclaim');
 
 const createRepos = reposData => {
@@ -254,75 +253,4 @@ describe('Repos', () => {
 			proclaim.throws(() => repos.getDependents(undefined));
 		});
 	});
-
-	describe('repoMatchesDependency', () => {
-
-		beforeEach(() => {
-			repos = createRepos([
-				{
-					name: 'a',
-					registry: 'npm'
-				},
-				{
-					name: 'b',
-					registry: 'bower'
-				}
-			]);
-		});
-
-		it('Returns true when the semver dependency represents the given repo', () => {
-			// Todo: Remove find one call so `getDirectDependents` test
-			// does not rely on `findOne` working.
-			const repo = repos.findOne('a');
-			const dependency = new Dependency('a', '^1.0.0', 'npm');
-			proclaim.isTrue(ReposRepository.repoMatchesDependency(repo, dependency));
-		});
-
-		it('Returns true when the Git url dependency represents the given repo', () => {
-			const repo = repos.findOne('a');
-			const dependency = new Dependency('b', 'git+ssh://git@github.com:Financial-Times/a.git#v1.0.0', 'npm');
-			proclaim.isTrue(ReposRepository.repoMatchesDependency(repo, dependency));
-		});
-
-		it('Returns true when the short Git url dependency represents the given repo', () => {
-			const repo = repos.findOne('a');
-			const dependency = new Dependency('b', 'Financial-Times/a', 'npm');
-			proclaim.isTrue(ReposRepository.repoMatchesDependency(repo, dependency));
-		});
-
-		it('Returns false when the semver dependency does not represent the given repo due to a registry mismatch', () => {
-			const repo = repos.findOne('a');
-			const dependency = new Dependency('a', '^1.0.0', 'bower');
-			proclaim.isFalse(ReposRepository.repoMatchesDependency(repo, dependency));
-		});
-
-		it('Returns false when the Git url dependency does not represent the given repo', () => {
-			const repo = repos.findOne('a');
-			const dependency = new Dependency('b', 'git+ssh://git@github.com:Financial-Times/ab.git#v1.0.0', 'npm');
-			proclaim.isFalse(ReposRepository.repoMatchesDependency(repo, dependency));
-		});
-
-		it('Returns false for a http url dependency', () => {
-			const repo = repos.findOne('a');
-			const dependency = new Dependency('b', 'http://example.in.ft.com/a.tar.gz', 'npm');
-			proclaim.isFalse(ReposRepository.repoMatchesDependency(repo, dependency));
-		});
-
-		it('Returns false when the dependency does not represent the given repo due to a name mismatch', () => {
-			const repo = repos.findOne('a');
-			const dependency = new Dependency('c', '^1.0.0', 'npm');
-			proclaim.isFalse(ReposRepository.repoMatchesDependency(repo, dependency));
-		});
-
-		it('Errors when no repo is given.', () => {
-			const dependency = new Dependency('c', '^1.0.0', 'npm');
-			proclaim.throws(() => ReposRepository.repoMatchesDependency(undefined, dependency));
-		});
-
-		it('Errors when no dependency is given.', () => {
-			const repo = repos.findOne('a');
-			proclaim.throws(() => ReposRepository.repoMatchesDependency(repo, undefined));
-		});
-	});
-
 });

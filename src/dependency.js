@@ -1,13 +1,13 @@
 const semver = require('semver');
 
 class Dependency {
-	constructor(name, version, source) {
-		if (!['bower', 'npm'].includes(source)) {
-			throw new Error('Source must be bower or npm.');
+	constructor(name, version, registry) {
+		if (!['bower', 'npm'].includes(registry)) {
+			throw new Error('Registry must be bower or npm.');
 		}
 		this.name = name;
 		this.version = version;
-		this.source = source;
+		this.registry = registry;
 		this.isSemver = semver.valid(version) || semver.validRange(version);
 	}
 }

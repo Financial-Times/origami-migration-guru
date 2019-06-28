@@ -1,4 +1,5 @@
 const Manifest = require('./manifest');
+const Dependency = require('./dependency');
 
 /**
  * @param {*} registry - To validate is a supported registry name.
@@ -67,6 +68,23 @@ class Repo {
 			throw new TypeError('"manifest" must be an instance of "Manifest".');
 		}
 		this.manifests.set(manifest.registry, manifest);
+	}
+
+	/**
+	 * Check if a dependency represents this repo.
+	 * @param {Dependency} dependency The dependency which may represent this repo.
+	 * @return {Boolean} - True if the dependency is for this repo.
+	 */
+	is(dependency) {
+		if (!(dependency instanceof Dependency)) {
+			throw new TypeError('Expected a Dependency.');
+		}
+		const manifest = this.manifests.get(dependency.registry);
+		if (!manifest) {
+			return false;
+		}
+		return manifest.is(dependency);
+
 	}
 }
 
