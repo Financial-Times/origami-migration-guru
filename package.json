@@ -20,7 +20,7 @@
     "chai": "4.2.0",
     "eslint": "6.4.0",
     "eslint-config-oclif": "3.1.0",
-    "globby": "8.0.2",
+    "globby": "10.0.1",
     "mocha": "6.2.0",
     "nyc": "13.3.0",
     "proclaim": "3.6.0"
