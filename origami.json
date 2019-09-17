@@ -1,0 +1,14 @@
+{
+    "description": "A CLI tool to find and explore component dependents to plan major migrations.",
+    "origamiType": null,
+    "origamiVersion": 1,
+    "keywords": [
+        "origami"
+    ],
+    "support": "https://github.com/Financial-Times/origami-migration-guru/issues",
+    "supportStatus": "experimental",
+    "supportContact": {
+        "email": "origami.support@ft.com",
+        "slack": "financialtimes/ft-origami"
+    }
+}
