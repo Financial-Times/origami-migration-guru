@@ -50,7 +50,7 @@
   "repository": "https://github.com/financial-times/origami-migration-guru/origami-migration-guru",
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
-    "verify": "eslint .",
+    "lint": "eslint .",
     "prepack": "oclif-dev manifest && oclif-dev readme",
     "test": "mocha --forbid-only \"test/**/*.test.js\"",
     "version": "oclif-dev readme && git add README.md"
