@@ -15,15 +15,15 @@
     "sinon": "^7.3.2"
   },
   "devDependencies": {
-    "@oclif/dev-cli": "^1.22.0",
-    "@oclif/test": "^1.2.4",
-    "chai": "^4.2.0",
-    "eslint": "^5.16.0",
-    "eslint-config-oclif": "^3.1.0",
-    "globby": "^8.0.2",
-    "mocha": "^5.2.0",
-    "nyc": "^13.0.0",
-    "proclaim": "^3.6.0"
+    "@oclif/dev-cli": "1.22.0",
+    "@oclif/test": "1.2.4",
+    "chai": "4.2.0",
+    "eslint": "5.16.0",
+    "eslint-config-oclif": "3.1.0",
+    "globby": "8.0.2",
+    "mocha": "5.2.0",
+    "nyc": "13.0.0",
+    "proclaim": "3.6.0"
   },
   "engines": {
     "node": ">=10.16.0"
