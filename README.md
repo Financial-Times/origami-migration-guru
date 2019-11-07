@@ -27,7 +27,7 @@ Create a migration guide in [DOT format](https://en.wikipedia.org/wiki/DOT_(grap
 cat manifests/ebi.txt | bin/run dot o-table
 ```
 
-This can be turned into a graph using tools such as `dot`.
+This can be turned into a graph using tools such as [graphviz](https://formulae.brew.sh/formula/graphviz).
 ```bash
 cat manifests/ebi.txt | bin/run dot o-table | dot -Tsvg > ~/Desktop/guide.svg
 ```
