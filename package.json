@@ -9,7 +9,7 @@
   "dependencies": {
     "@oclif/command": "^1.5.14",
     "@oclif/config": "^1.13.0",
-    "@oclif/plugin-help": "^2.2.0",
+    "@oclif/plugin-help": "^3.0.0",
     "chalk": "^4.0.0",
     "enquirer": "^2.3.0",
     "sinon": "^9.0.0"
