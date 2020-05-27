@@ -1,7 +1,7 @@
 origami-migration-guru
 =======================
 
-**Origami Migration Guru is experimental.**
+**Deprecated**: origami-migration-guru started as a 10% time project. It was useful during the [2019 major cascade](https://origami.ft.com/blog/2019/10/31/major-cascade/) but is not easy to use, for example requiring a list of all manifest files, and is not 100% reliable. It needs more work and has therefore been deprecated.
 
 Origami Migration Guru helps plan the migration for new major released of components or other projects. For a given project, it analyses a given set of repository manifests looking for dependents. The dependents may be shown as a graph or step by step in an interactive command line interface.
 
